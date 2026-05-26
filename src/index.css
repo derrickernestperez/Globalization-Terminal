@@ -1,0 +1,253 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════
+   BASE
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background-color: #0A0A0A;
+  color: #E0E0E0;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════
+   SCANLINE + CRT OVERLAY
+═══════════════════════════════════════ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px
+  );
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.65) 100%);
+}
+
+/* ═══════════════════════════════════════
+   TYPOGRAPHY UTILITIES
+═══════════════════════════════════════ */
+.font-display  { font-family: 'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif; }
+.font-mono-arcade { font-family: 'Share Tech Mono', 'Courier New', monospace; }
+
+/* ═══════════════════════════════════════
+   TEXT GLOW
+═══════════════════════════════════════ */
+.text-glow-magenta { text-shadow: 0 0 10px #FF0080, 0 0 25px #FF0080, 0 0 50px rgba(255,0,128,0.4); }
+.text-glow-cyan    { text-shadow: 0 0 10px #00FFFF, 0 0 25px #00FFFF; }
+.text-glow-lime    { text-shadow: 0 0 10px #39FF14, 0 0 25px #39FF14; }
+.text-glow-gold    { text-shadow: 0 0 10px #FFD700, 0 0 25px #FFD700; }
+
+/* ═══════════════════════════════════════
+   ARCADE CARDS
+═══════════════════════════════════════ */
+.arcade-card {
+  background: #111111;
+  border: 2px solid #2A2A2A;
+  position: relative;
+}
+.arcade-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,0,128,0.04) 100%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════
+   ARCADE BUTTONS
+═══════════════════════════════════════ */
+.btn-arcade {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border: 3px solid;
+  padding: 0.625rem 1.25rem;
+  transition: box-shadow 0.08s ease, background 0.08s ease, color 0.08s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+.btn-arcade:active { transform: translateY(5px) !important; transition: transform 0s !important; }
+
+.btn-magenta { background: #1A0010; border-color: #FF0080; color: #FF0080; box-shadow: 0 6px 0 #8B0040, 0 0 18px rgba(255,0,128,0.2); }
+.btn-magenta:hover { background: #2A0018; box-shadow: 0 6px 0 #8B0040, 0 0 30px rgba(255,0,128,0.5); color: #FF66B3; }
+.btn-magenta:active { box-shadow: 0 1px 0 #8B0040 !important; }
+
+.btn-cyan { background: #001A1A; border-color: #00FFFF; color: #00FFFF; box-shadow: 0 6px 0 #007B8B, 0 0 18px rgba(0,255,255,0.2); }
+.btn-cyan:hover { background: #002525; box-shadow: 0 6px 0 #007B8B, 0 0 30px rgba(0,255,255,0.5); }
+.btn-cyan:active { box-shadow: 0 1px 0 #007B8B !important; }
+
+.btn-lime { background: #0A1A00; border-color: #39FF14; color: #39FF14; box-shadow: 0 6px 0 #1F8B00, 0 0 18px rgba(57,255,20,0.2); }
+.btn-lime:hover { background: #0F2500; box-shadow: 0 6px 0 #1F8B00, 0 0 30px rgba(57,255,20,0.5); }
+.btn-lime:active { box-shadow: 0 1px 0 #1F8B00 !important; }
+
+.btn-gold { background: #1A1400; border-color: #FFD700; color: #FFD700; box-shadow: 0 6px 0 #8B7700, 0 0 18px rgba(255,215,0,0.2); }
+.btn-gold:hover { background: #252000; box-shadow: 0 6px 0 #8B7700, 0 0 30px rgba(255,215,0,0.5); }
+.btn-gold:active { box-shadow: 0 1px 0 #8B7700 !important; }
+
+.btn-ghost { background: transparent; border-color: #2A2A2A; color: #555; }
+.btn-ghost:hover { border-color: #555; color: #888; }
+
+/* ═══════════════════════════════════════
+   INPUT
+═══════════════════════════════════════ */
+.arcade-input {
+  background: #0A0A0A;
+  border: 2px solid #2A2A2A;
+  color: #E0E0E0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.9rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  width: 100%;
+  display: block;
+}
+.arcade-input:focus { border-color: #00FFFF; box-shadow: 0 0 12px rgba(0,255,255,0.25); }
+.arcade-input::placeholder { color: #333; }
+
+/* ═══════════════════════════════════════
+   MARQUEE
+═══════════════════════════════════════ */
+.marquee-wrap { overflow: hidden; white-space: nowrap; flex: 1; }
+.marquee-inner { display: inline-flex; animation: ticker 32s linear infinite; }
+@keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+/* ═══════════════════════════════════════
+   GLITCH LAYERS
+═══════════════════════════════════════ */
+.glitch-wrap { position: relative; display: inline-block; }
+.glitch-layer-m {
+  position: absolute; inset: 0; color: #FF0080; opacity: 0;
+  animation: glitch1 4s steps(1) infinite;
+}
+.glitch-layer-c {
+  position: absolute; inset: 0; color: #00FFFF; opacity: 0;
+  animation: glitch2 4s steps(1) infinite 0.12s;
+}
+@keyframes glitch1 {
+  0%,90% { opacity: 0; }
+  91% { opacity: 0.85; clip-path: polygon(0 10%,100% 10%,100% 40%,0 40%); transform: translate(-3px,0); }
+  93% { opacity: 0; }
+}
+@keyframes glitch2 {
+  0%,92% { opacity: 0; }
+  93% { opacity: 0.7; clip-path: polygon(0 60%,100% 60%,100% 85%,0 85%); transform: translate(3px,0); }
+  95% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════
+   3D FLIP (Feud answer slots)
+═══════════════════════════════════════ */
+.flip-container { perspective: 900px; }
+.flip-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.52s cubic-bezier(0.4,0,0.2,1);
+}
+.flip-inner.flipped { transform: rotateX(180deg); }
+.flip-front, .flip-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-back { transform: rotateX(180deg); }
+
+/* ═══════════════════════════════════════
+   PORTAL BINS (Stage 2)
+═══════════════════════════════════════ */
+.portal-core {
+  background: radial-gradient(ellipse at 50% 110%, rgba(255,215,0,0.18) 0%, transparent 65%);
+  border: 3px solid #FFD700;
+  box-shadow: 0 0 20px rgba(255,215,0,0.3), inset 0 0 30px rgba(255,215,0,0.06);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.portal-core:hover { box-shadow: 0 0 35px rgba(255,215,0,0.6), inset 0 0 40px rgba(255,215,0,0.12); }
+
+.portal-semi {
+  background: radial-gradient(ellipse at 50% 110%, rgba(0,255,255,0.18) 0%, transparent 65%);
+  border: 3px solid #00FFFF;
+  box-shadow: 0 0 20px rgba(0,255,255,0.3), inset 0 0 30px rgba(0,255,255,0.06);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.portal-semi:hover { box-shadow: 0 0 35px rgba(0,255,255,0.6), inset 0 0 40px rgba(0,255,255,0.12); }
+
+.portal-periphery {
+  background: radial-gradient(ellipse at 50% 110%, rgba(255,0,128,0.18) 0%, transparent 65%);
+  border: 3px solid #FF0080;
+  box-shadow: 0 0 20px rgba(255,0,128,0.3), inset 0 0 30px rgba(255,0,128,0.06);
+  cursor: pointer;
+  transition: box-shadow 0.15s, transform 0.1s;
+}
+.portal-periphery:hover { box-shadow: 0 0 35px rgba(255,0,128,0.6), inset 0 0 40px rgba(255,0,128,0.12); }
+
+/* ═══════════════════════════════════════
+   HUD
+═══════════════════════════════════════ */
+.hud-panel {
+  background: rgba(0,0,0,0.92);
+  border-bottom: 2px solid #FF0080;
+  backdrop-filter: blur(12px);
+}
+
+/* ═══════════════════════════════════════
+   DOSSIER / GRIMOIRE
+═══════════════════════════════════════ */
+.dossier-bg {
+  background: #050D05;
+  position: relative;
+}
+.dossier-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 18px,
+    rgba(0,200,0,0.012) 18px, rgba(0,200,0,0.012) 19px
+  );
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #111; }
+::-webkit-scrollbar-thumb { background: #2A2A2A; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #FF0080; }
+
+/* ═══════════════════════════════════════
+   GRID BG UTILITY
+═══════════════════════════════════════ */
+.arcade-grid-bg {
+  background-image:
+    linear-gradient(rgba(255,0,128,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,0,128,0.06) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
