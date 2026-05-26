@@ -22,13 +22,6 @@ Part learning tool, part game show, part globalization fever dream.
 
 ---
 
-## 🎥 Gameplay Demo
-
-*(Replace the link below with a short screen recording of your game)*
-![Gameplay Demo](https://via.placeholder.com/800x400/000000/FFFFFF?text=Gameplay+Demo+.GIF+Here)
-
----
-
 ## 📖 About The Project
 
 **Globalization Terminal: Absurdist Arcade Edition** is a client-side educational game that turns globalization concepts into an interactive arcade experience.
