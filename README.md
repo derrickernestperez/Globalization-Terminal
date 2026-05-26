@@ -22,7 +22,7 @@ Part learning tool, part game show, part globalization fever dream.
 
 ---
 
-## 📖 About The Project
+## About The Project
 
 **Globalization Terminal: Absurdist Arcade Edition** is a client-side educational game that turns globalization concepts into an interactive arcade experience.
 
@@ -35,7 +35,7 @@ The experience is styled like a neon, surreal arcade with strong visual effects,
 
 ---
 
-## ✨ Features
+## Features
 
 - **Surreal Arcade UI:** Neon visuals, glitch aesthetics, and animated transitions.
 - **Single-Page Architecture:** Built with React + Vite for lightning-fast loading.
@@ -47,7 +47,7 @@ The experience is styled like a neon, surreal arcade with strong visual effects,
 
 ---
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **React** - **Vite** - **Tailwind CSS v3**
 - **Framer Motion**
@@ -56,7 +56,7 @@ The experience is styled like a neon, surreal arcade with strong visual effects,
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Installation
 Clone the repository and install dependencies:
