@@ -37,14 +37,29 @@ export default function App() {
   const [selectedResourceId, setSelectedResourceId] = useState(ContentLibrary.resources[0].id);
   const { startBgMusic, stopBgMusic } = useSound();
 
-  /* Start/stop background music based on mute state */
+  /* Start music on first user interaction (browsers block autoplay before this) */
+  useEffect(() => {
+    const onFirstInteraction = () => {
+      if (!isMuted) startBgMusic();
+      document.removeEventListener('pointerdown', onFirstInteraction);
+      document.removeEventListener('keydown', onFirstInteraction);
+    };
+    document.addEventListener('pointerdown', onFirstInteraction);
+    document.addEventListener('keydown', onFirstInteraction);
+    return () => {
+      document.removeEventListener('pointerdown', onFirstInteraction);
+      document.removeEventListener('keydown', onFirstInteraction);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Keep music in sync with mute toggle and view changes */
   useEffect(() => {
     if (isMuted) {
       stopBgMusic();
-    } else if (currentView === 'game' || currentView === 'results') {
-      startBgMusic();
+    } else {
+      startBgMusic(); /* safe to call repeatedly — no-ops if already playing */
     }
-    return () => {};
   }, [isMuted, currentView, startBgMusic, stopBgMusic]);
 
   const openLibrary = (resourceId = ContentLibrary.resources[0].id) => {
@@ -75,7 +90,6 @@ export default function App() {
     setUsername('');
     setChallengerData(null);
     setScores(null);
-    stopBgMusic();
     setCurrentView('landing');
   };
 
