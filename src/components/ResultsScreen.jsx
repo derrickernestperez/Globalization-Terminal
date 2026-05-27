@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { BookOpen, Copy, Share2 } from 'lucide-react';
 
-const SITE_URL = 'https://github.com/derrickernestperez/Globalization-Terminal';
+const SITE_URL = 'https://globalization-terminal.vercel.app';
 
 const encodeToken = (username, scores) => {
   try {
@@ -72,7 +72,7 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
   const token = encodeToken(username, scores);
 
   const buildMessage = () =>
-    `⚡ GLOBALIZATION TERMINAL CHALLENGE ⚡\n\nI am ${username} and I scored ${scores.total} pts!\nGEO-GUESSR: ${scores.stage1}  |  FLAG SORT: ${scores.stage2}  |  GLOBAL FEUD: ${scores.stage3}\n\nThink you can beat me? 🌐\nPlay here: ${SITE_URL}\n\nPaste my challenge code in the ◈ CHALLENGER mode:\n${token}`;
+    `⚡ GLOBALIZATION TERMINAL CHALLENGE ⚡\n\nI am ${username} and I scored ${scores.total} pts!\nCan you beat my score? 🌐\n\nPlay here: ${SITE_URL}\n\nPaste my challenge code in the ◈ CHALLENGER mode:\n${token}`;
 
   const handleCopy = () => {
     if (!token) return;
