@@ -117,6 +117,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   const dragRef = useRef(null);
   const frameRef = useRef(null);
   const canvasRef = useRef(null);
+  const containerRef = useRef(null);
   const ringsRef = useRef(null); // decoded topojson rings
 
   /* Fetch world atlas topojson once */
@@ -125,6 +126,24 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
       .then((r) => r.json())
       .then((topo) => { ringsRef.current = decodeTopojson(topo); })
       .catch(() => { ringsRef.current = []; });
+  }, []);
+
+  /* Sync canvas buffer size to the rendered container size (mobile-safe) */
+  useEffect(() => {
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return undefined;
+    const sync = () => {
+      const size = Math.round(container.offsetWidth);
+      if (size > 0 && (canvas.width !== size || canvas.height !== size)) {
+        canvas.width = size;
+        canvas.height = size;
+      }
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(container);
+    return () => ro.disconnect();
   }, []);
 
   /* Draw continents on canvas whenever rotation or zoom changes */
@@ -223,7 +242,11 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   };
 
   return (
-    <div className="relative mx-auto" style={{ width: '100%', maxWidth: '390px', aspectRatio: '1' }}>
+    <div
+      ref={containerRef}
+      className="relative mx-auto overflow-hidden"
+      style={{ width: '100%', maxWidth: 'min(85vw, 390px)', aspectRatio: '1 / 1' }}
+    >
       {/* Zoom controls */}
       <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
         {[['＋', 1.28], ['－', 0.78]].map(([lbl, f]) => (
@@ -249,7 +272,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         role="button"
         tabIndex={0}
         aria-label="Interactive globe — click to place pin"
-        className="w-full h-full rounded-full overflow-hidden cursor-crosshair select-none"
+        className="absolute inset-0 rounded-full overflow-hidden cursor-crosshair select-none"
         style={{
           background: 'radial-gradient(circle at 38% 35%, #0A1F3A 0%, #040C18 60%, #020810 100%)',
           border: '2px solid rgba(255,0,128,0.35)',
@@ -276,7 +299,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
           width={390}
           height={390}
           className="absolute inset-0 rounded-full pointer-events-none"
-          style={{ mixBlendMode: 'screen', opacity: 0.92 }}
+          style={{ width: '100%', height: '100%', mixBlendMode: 'screen', opacity: 0.92 }}
         />
 
         {/* Atmosphere gradient */}

@@ -165,7 +165,7 @@ export default function App() {
         )}
       </div>
 
-      <Footer />
+      {currentView === 'landing' && <Footer />}
 
       <LibraryModal
         isOpen={isLibraryOpen}
