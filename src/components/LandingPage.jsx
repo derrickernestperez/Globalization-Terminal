@@ -198,7 +198,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                   whileTap={{ scale: 0.94, y: 5 }}
                   className="btn-arcade btn-cyan flex-1 py-3"
                 >
-                  ⚡ CHALLENGER
+                  ◈ CHALLENGER
                 </motion.button>
               </div>
 

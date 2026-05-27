@@ -12,8 +12,27 @@ const encodeToken = (username, scores) => {
   }
 };
 
+const PB_KEY = 'gt-personal-best';
+
+const loadBest = () => {
+  try {
+    const raw = localStorage.getItem(PB_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveBest = (name, total) => {
+  try {
+    localStorage.setItem(PB_KEY, JSON.stringify({ name, score: total, date: new Date().toISOString().slice(0, 10) }));
+  } catch { /* ignore */ }
+};
+
 export default function ResultsScreen({ username, scores, challengerData, onPlayAgain, onOpenLibrary, onCongratsSound }) {
   const [copied, setCopied] = useState(false);
+  const [isNewBest, setIsNewBest] = useState(false);
+  const [prevBest, setPrevBest] = useState(null);
 
   const isVs = !!challengerData;
   const won = isVs && scores.total > challengerData.total;
@@ -31,6 +50,18 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
       burst({ y: 0.55, x: 0.4 });
       setTimeout(() => burst({ y: 0.5, x: 0.6 }), 250);
       if (onCongratsSound) onCongratsSound();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Personal best tracking (solo only) ── */
+  useEffect(() => {
+    if (isVs) return;
+    const existing = loadBest();
+    if (!existing || scores.total > existing.score) {
+      setIsNewBest(true);
+      saveBest(username, scores.total);
+    } else {
+      setPrevBest(existing);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -140,6 +171,25 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
             <p className="font-display text-7xl text-[#FFD700] text-glow-gold leading-none">
               {scores.total}
             </p>
+
+            {/* ── Personal best badge (solo only) ── */}
+            {!isVs && (
+              isNewBest ? (
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4, type: 'spring', damping: 12 }}
+                  className="font-mono-arcade text-[10px] tracking-widest mt-2 text-glow-gold"
+                  style={{ color: '#FFD700' }}
+                >
+                  ★ NEW PERSONAL BEST ★
+                </motion.p>
+              ) : prevBest && (
+                <p className="font-mono-arcade text-[9px] text-[#444] tracking-widest mt-2">
+                  ◈ YOUR BEST: {prevBest.score} by {prevBest.name.toUpperCase()}
+                </p>
+              )
+            )}
           </div>
 
           {isVs && (
