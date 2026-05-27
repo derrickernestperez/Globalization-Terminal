@@ -702,7 +702,12 @@ export default function SimulationPreview({
     let dist = null;
     if (pinnedPt) {
       dist = Math.round(haversine(pinnedPt.lat, pinnedPt.lng, p.lat, p.lng));
-      pts = geoPoints(dist);
+      /* Perfect score if the player pinned the correct country */
+      const countryMatch =
+        p.country &&
+        pinnedPt.label &&
+        pinnedPt.label.trim().toLowerCase() === p.country.trim().toLowerCase();
+      pts = countryMatch ? 100 : geoPoints(dist);
     }
     addS1(pts);
     if (pts >= 70) sfx.good(); else sfx.bad();
