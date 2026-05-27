@@ -1,23 +1,16 @@
 <div align="center">
 
-<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="60" cy="60" r="55" fill="#0A0A0A" stroke="#FF0080" stroke-width="2"/>
-  <ellipse cx="60" cy="60" rx="55" ry="20" fill="none" stroke="#00FFFF" stroke-width="1" opacity="0.5"/>
-  <ellipse cx="60" cy="60" rx="55" ry="40" fill="none" stroke="#00FFFF" stroke-width="1" opacity="0.3"/>
-  <line x1="60" y1="5" x2="60" y2="115" stroke="#00FFFF" stroke-width="1" opacity="0.4"/>
-  <line x1="5" y1="60" x2="115" y2="60" stroke="#00FFFF" stroke-width="1" opacity="0.4"/>
-  <defs>
-    <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  </defs>
-  <text x="60" y="55" text-anchor="middle" fill="#FF0080" font-family="monospace" font-size="11" font-weight="bold">GLOB</text>
-  <text x="60" y="70" text-anchor="middle" fill="#00FFFF" font-family="monospace" font-size="11" font-weight="bold">TERM</text>
-</svg>
+![Globalization Terminal](https://img.shields.io/badge/🌐_GLOBALIZATION-TERMINAL-FF0080?style=for-the-badge&labelColor=0A0A0A&color=FF0080)
 
 # Globalization Terminal
 ### Absurdist Arcade Edition
 
 A surreal, high-energy academic arcade built with React and Vite.  
 Part learning tool, part game show, part globalization fever dream.
+
+<br />
+
+[![▶ PLAY NOW](https://img.shields.io/badge/▶_PLAY_NOW-globalization--terminal.vercel.app-00FFFF?style=for-the-badge&labelColor=0A0A0A)](https://globalization-terminal.vercel.app)
 
 <br />
 
@@ -29,6 +22,12 @@ Part learning tool, part game show, part globalization fever dream.
 ![GNED 07](https://img.shields.io/badge/GNED_07-The_Contemporary_World-FFD700?style=for-the-badge&labelColor=0A0A0A)
 
 </div>
+
+---
+
+## 🔗 Live Demo
+
+> **Play the game here →** [https://globalization-terminal.vercel.app](https://globalization-terminal.vercel.app)
 
 ---
 
