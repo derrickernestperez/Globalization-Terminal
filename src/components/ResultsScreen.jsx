@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Copy, Share2 } from 'lucide-react';
+
+const SITE_URL = 'https://github.com/derrickernestperez/Globalization-Terminal';
 
 const encodeToken = (username, scores) => {
   try {
@@ -65,14 +67,36 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [shared, setShared] = useState(false);
+
   const token = encodeToken(username, scores);
+
+  const buildMessage = () =>
+    `⚡ GLOBALIZATION TERMINAL CHALLENGE ⚡\n\nI am ${username} and I scored ${scores.total} pts!\nGEO-GUESSR: ${scores.stage1}  |  FLAG SORT: ${scores.stage2}  |  GLOBAL FEUD: ${scores.stage3}\n\nThink you can beat me? 🌐\nPlay here: ${SITE_URL}\n\nPaste my challenge code in the ◈ CHALLENGER mode:\n${token}`;
 
   const handleCopy = () => {
     if (!token) return;
-    navigator.clipboard.writeText(token).then(() => {
+    navigator.clipboard.writeText(buildMessage()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     });
+  };
+
+  const handleShare = async () => {
+    const msg = buildMessage();
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Globalization Terminal Challenge', text: msg });
+        setShared(true);
+        setTimeout(() => setShared(false), 2500);
+      } catch { /* user cancelled */ }
+    } else {
+      /* fallback: copy to clipboard on desktop */
+      navigator.clipboard.writeText(msg).then(() => {
+        setShared(true);
+        setTimeout(() => setShared(false), 2500);
+      });
+    }
   };
 
   return (
@@ -221,24 +245,49 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
             className="arcade-card p-4 mb-4"
             style={{ borderColor: '#FFD700', borderWidth: '1px', borderStyle: 'dashed' }}
           >
-            <p className="font-mono-arcade text-[9px] text-[#FFD700] tracking-widest mb-2 uppercase">
-              ◈ CHALLENGE SOMEONE — SHARE THIS TOKEN
+            <p className="font-mono-arcade text-[9px] text-[#FFD700] tracking-widest mb-1 uppercase">
+              ◈ CHALLENGE SOMEONE
             </p>
+            <p className="font-mono-arcade text-[8px] text-[#444] tracking-widest mb-3">
+              SHARE YOUR CODE — PASTE IN ◈ CHALLENGER MODE TO COMPETE
+            </p>
+
+            {/* Token display */}
             <div
               className="p-2 mb-3 font-mono-arcade text-[9px] text-[#555] break-all select-all cursor-text"
               style={{ background: '#0A0A0A', border: '1px solid #1A1A1A' }}
             >
               {token}
             </div>
-            <motion.button
-              type="button"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.94, y: 5 }}
-              onClick={handleCopy}
-              className={`btn-arcade w-full py-3 ${copied ? 'btn-lime' : 'btn-gold'}`}
-            >
-              {copied ? '✓ COPIED TO CLIPBOARD!' : '⧉ COPY CHALLENGER TOKEN'}
-            </motion.button>
+
+            {/* Action buttons */}
+            <div className="flex gap-2">
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.94, y: 5 }}
+                onClick={handleCopy}
+                className={`btn-arcade flex-1 py-2.5 flex items-center justify-center gap-2 text-[10px] ${copied ? 'btn-lime' : 'btn-gold'}`}
+              >
+                <Copy size={11} />
+                {copied ? '✓ COPIED!' : 'COPY MESSAGE'}
+              </motion.button>
+
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.94, y: 5 }}
+                onClick={handleShare}
+                className={`btn-arcade flex-1 py-2.5 flex items-center justify-center gap-2 text-[10px] ${shared ? 'btn-lime' : 'btn-cyan'}`}
+              >
+                <Share2 size={11} />
+                {shared ? '✓ SHARED!' : 'SHARE'}
+              </motion.button>
+            </div>
+
+            <p className="font-mono-arcade text-[7px] text-[#2A2A2A] text-center mt-2 tracking-widest">
+              SHARE OPENS FACEBOOK · MESSENGER · VIBER · ETC. ON MOBILE
+            </p>
           </div>
         )}
 
