@@ -769,8 +769,16 @@ export default function SimulationPreview({
       setFeudAutoAdvancing(true);
       setTimeout(() => {
         setFeudAutoAdvancing(false);
-        setFeudQIdx((i) => (i + 1) % feudDeck.length);
         setFeudInput('');
+        setFeudQIdx((i) => {
+          const next = i + 1;
+          if (next >= feudDeck.length) {
+            /* Answered through all questions — end the round */
+            endFeud();
+            return i;
+          }
+          return next;
+        });
       }, 900);
     } else {
       sfx.bad();
