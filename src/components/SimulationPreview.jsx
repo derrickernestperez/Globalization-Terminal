@@ -393,32 +393,34 @@ function drawRings(ctx, rings, rotY, rotX, zoom, W, H) {
   ctx.clip();
 
   ctx.shadowColor = '#00FFCC';
-  ctx.shadowBlur  = 5;
+  ctx.shadowBlur  = 4;
+  ctx.lineWidth   = 0.65;
 
   for (const ring of rings) {
+    /* Pre-project every vertex so we can check all-visible in one pass */
+    const pts = ring.map(([lng, lat]) => orthoProject(lng, lat, rotY, rotX, R, cx, cy));
+    const fullyVisible = pts.every((p) => p.visible);
+
     ctx.beginPath();
     let penDown = false;
-
-    for (const [lng, lat] of ring) {
-      const { x, y, visible } = orthoProject(lng, lat, rotY, rotX, R, cx, cy);
-      if (!visible) {
-        penDown = false;   /* lift pen when crossing to back hemisphere */
-        continue;
-      }
+    for (const { x, y, visible } of pts) {
+      if (!visible) { penDown = false; continue; }      /* lift pen at terminator */
       if (!penDown) { ctx.moveTo(x, y); penDown = true; }
       else ctx.lineTo(x, y);
     }
 
-    /* Only fill/close if the ring started on the front face */
-    if (penDown) ctx.closePath();
-    ctx.fillStyle   = 'rgba(0, 210, 185, 0.2)';
+    if (fullyVisible) {
+      /* Complete polygon — close + fill with no chord artifacts */
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(0, 210, 185, 0.18)';
+      ctx.fill();
+    }
+    /* Always stroke the visible arcs */
     ctx.strokeStyle = '#00FFDD';
-    ctx.lineWidth   = 0.65;
-    ctx.fill();
     ctx.stroke();
   }
 
-  /* Specular highlight blob */
+  /* Specular highlight */
   ctx.shadowBlur = 0;
   const grad = ctx.createRadialGradient(cx - W * 0.12, cy - H * 0.18, 0, cx, cy, R);
   grad.addColorStop(0,   'rgba(140,220,255,0.10)');
@@ -644,6 +646,8 @@ export default function SimulationPreview({
   const [feudInput, setFeudInput] = useState('');
   const [feudActive, setFeudActive] = useState(false);
   const [revealedByQ, setRevealedByQ] = useState({}); // { qId: Set<number> }
+  const [feudAutoAdvancing, setFeudAutoAdvancing] = useState(false); // brief pause after correct
+  const [feudFinishConfirm, setFeudFinishConfirm] = useState(false); // early-exit modal
 
   const cumulative = displayS1 + displayS2 + displayS3;
   const challengerTotal = challengerData?.total ?? null;
@@ -715,7 +719,7 @@ export default function SimulationPreview({
   function handleFeudSubmit() {
     const q = feudDeck[feudQIdx];
     const val = feudInput.trim().toLowerCase();
-    if (!val) return;
+    if (!val || feudAutoAdvancing) return;
     const already = revealedByQ[q.id] ?? new Set();
     let matched = false;
     q.answers.forEach((ans, idx) => {
@@ -730,17 +734,31 @@ export default function SimulationPreview({
         addS3(ans.points);
       }
     });
-    if (matched) sfx.good(); else sfx.bad();
-    setFeudInput('');
+    if (matched) {
+      sfx.good();
+      setFeudInput('');
+      /* Auto-advance to next question after the flip animation plays */
+      setFeudAutoAdvancing(true);
+      setTimeout(() => {
+        setFeudAutoAdvancing(false);
+        setFeudQIdx((i) => (i + 1) % feudDeck.length);
+        setFeudInput('');
+      }, 900);
+    } else {
+      sfx.bad();
+      setFeudInput('');
+    }
   }
 
   function handleFeudPass() {
+    if (feudAutoAdvancing) return;
     sfx.navigate();
     setFeudQIdx((i) => (i + 1) % feudDeck.length);
     setFeudInput('');
   }
 
   function endFeud() {
+    setFeudFinishConfirm(false);
     setFeudActive(false);
     setGameStage('s3-recap');
   }
@@ -1020,10 +1038,11 @@ export default function SimulationPreview({
                 </p>
                 <p className="font-display text-4xl text-white mb-6">RULES</p>
                 <ul className="text-sm text-[#666] mb-8 space-y-2 max-w-xs mx-auto text-left">
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions with hidden answer slots</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>2 minute clock for your entire run</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>PASS loops the board — keep going</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Correct answer = 3D flip reveal + points</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions, hidden answer slots</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>2-minute clock — race the board</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → auto-advance to next Q</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Don't know it? Hit PASS to skip</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Timer hits zero → round ends automatically</li>
                 </ul>
                 <motion.button
                   type="button"
@@ -1061,23 +1080,43 @@ export default function SimulationPreview({
                   })}
                 </div>
 
+                {/* Auto-advancing indicator */}
+                {feudAutoAdvancing && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mb-3 py-2 text-center font-mono-arcade text-[11px] tracking-widest"
+                    style={{
+                      border: '1px solid #39FF14',
+                      color: '#39FF14',
+                      boxShadow: '0 0 14px rgba(57,255,20,0.3)',
+                    }}
+                  >
+                    ✓ CORRECT — NEXT QUESTION IN...
+                  </motion.div>
+                )}
+
                 {/* Input + buttons */}
                 <div className="flex gap-2 mb-2">
                   <input
                     className="arcade-input flex-1"
                     type="text"
-                    placeholder="TYPE YOUR ANSWER..."
+                    placeholder={feudAutoAdvancing ? 'ADVANCING...' : 'TYPE YOUR ANSWER...'}
                     value={feudInput}
+                    disabled={feudAutoAdvancing}
                     onChange={(e) => setFeudInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleFeudSubmit(); }}
                     autoComplete="off"
+                    style={{ opacity: feudAutoAdvancing ? 0.4 : 1 }}
                   />
                   <motion.button
                     type="button"
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.94, y: 5 }}
+                    whileHover={{ scale: feudAutoAdvancing ? 1 : 1.03 }}
+                    whileTap={{ scale: feudAutoAdvancing ? 1 : 0.94, y: feudAutoAdvancing ? 0 : 5 }}
                     onClick={handleFeudSubmit}
+                    disabled={feudAutoAdvancing}
                     className="btn-arcade btn-lime px-5"
+                    style={{ opacity: feudAutoAdvancing ? 0.4 : 1 }}
                   >
                     SUBMIT
                   </motion.button>
@@ -1085,21 +1124,74 @@ export default function SimulationPreview({
                 <div className="flex gap-2">
                   <motion.button
                     type="button"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.94, y: 5 }}
+                    whileHover={{ scale: feudAutoAdvancing ? 1 : 1.02 }}
+                    whileTap={{ scale: feudAutoAdvancing ? 1 : 0.94, y: feudAutoAdvancing ? 0 : 5 }}
                     onClick={handleFeudPass}
+                    disabled={feudAutoAdvancing}
                     className="btn-arcade btn-cyan flex-1 py-3 text-sm"
+                    style={{ opacity: feudAutoAdvancing ? 0.4 : 1 }}
                   >
                     ⟳ PASS
                   </motion.button>
                   <button
                     type="button"
-                    onClick={endFeud}
+                    onClick={() => setFeudFinishConfirm(true)}
                     className="btn-arcade btn-ghost px-5 py-3 text-xs hover:border-[#FF0080] hover:text-[#FF0080] transition-all"
                   >
                     FINISH
                   </button>
                 </div>
+
+                {/* Early-exit confirmation modal */}
+                <AnimatePresence>
+                  {feudFinishConfirm && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                    >
+                      <motion.div
+                        initial={{ scale: 0.85, y: 30 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.85, y: 30 }}
+                        transition={{ type: 'spring', damping: 18 }}
+                        className="arcade-card w-full max-w-sm p-6"
+                        style={{ borderColor: '#FF0080', borderWidth: '2px' }}
+                      >
+                        <p className="font-mono-arcade text-[9px] text-[#FF0080] tracking-widest mb-3 uppercase">
+                          ⚠ CONFIRM EARLY EXIT
+                        </p>
+                        <p className="font-display text-3xl text-white mb-2">End Round Early?</p>
+                        <p className="text-sm text-[#666] leading-relaxed mb-6">
+                          You still have{' '}
+                          <span className="text-[#FFD700] font-mono-arcade">
+                            {`${String(Math.floor(feudTimer / 60)).padStart(2, '0')}:${String(feudTimer % 60).padStart(2, '0')}`}
+                          </span>{' '}
+                          remaining. Unscored answers will be lost.
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { sfx.click(); setFeudFinishConfirm(false); }}
+                            className="btn-arcade btn-ghost flex-1 py-3"
+                          >
+                            ← KEEP PLAYING
+                          </button>
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.94, y: 5 }}
+                            onClick={() => { sfx.bad(); endFeud(); }}
+                            className="btn-arcade btn-magenta flex-1 py-3"
+                          >
+                            END NOW
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </>
             )}
           </motion.div>
