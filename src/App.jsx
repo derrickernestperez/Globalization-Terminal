@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LandingPage from './components/LandingPage.jsx';
 import SimulationPreview from './components/SimulationPreview.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import LibraryModal from './components/LibraryModal.jsx';
 import { ContentLibrary } from './data/ContentLibrary.js';
+import useSound from './hooks/useSound.js';
 
 const TICKER_ITEMS = [
   'SILK_ROUTE/DUCAT ▲ 14.88',
@@ -34,6 +35,17 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [selectedResourceId, setSelectedResourceId] = useState(ContentLibrary.resources[0].id);
+  const { startBgMusic, stopBgMusic } = useSound();
+
+  /* Start/stop background music based on mute state */
+  useEffect(() => {
+    if (isMuted) {
+      stopBgMusic();
+    } else if (currentView === 'game' || currentView === 'results') {
+      startBgMusic();
+    }
+    return () => {};
+  }, [isMuted, currentView, startBgMusic, stopBgMusic]);
 
   const openLibrary = (resourceId = ContentLibrary.resources[0].id) => {
     setSelectedResourceId(resourceId);
@@ -44,12 +56,14 @@ export default function App() {
     setUsername(name);
     setChallengerData(null);
     setCurrentView('game');
+    if (!isMuted) startBgMusic();
   };
 
   const handleStartChallenger = (name, decoded) => {
     setUsername(name);
     setChallengerData(decoded);
     setCurrentView('game');
+    if (!isMuted) startBgMusic();
   };
 
   const handleGameComplete = (gameScores) => {
@@ -61,6 +75,7 @@ export default function App() {
     setUsername('');
     setChallengerData(null);
     setScores(null);
+    stopBgMusic();
     setCurrentView('landing');
   };
 
@@ -90,7 +105,7 @@ export default function App() {
           onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,0,128,0.1)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
-          {isMuted ? '◼ OFF' : '◼ SFX'}
+          {isMuted ? '✕ MUTE' : '♪ SOUND'}
         </button>
       </div>
 

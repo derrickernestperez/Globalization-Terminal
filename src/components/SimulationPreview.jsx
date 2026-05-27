@@ -10,8 +10,7 @@ const FLAGS_COUNT = 10;
 const GEO_TIMER_SEC = 30;
 const FEUD_TIMER_SEC = 120;
 
-const MAP_URL =
-  'https://upload.wikimedia.org/wikipedia/commons/8/80/World_map_-_low_resolution.svg';
+const WORLD_ATLAS_URL = 'https://unpkg.com/world-atlas@2.0.2/land-110m.json';
 
 /* ─────────────── Helpers ─────────────── */
 function haversine(lat1, lng1, lat2, lng2) {
@@ -78,6 +77,32 @@ function nearestCountry(lat, lng) {
   return best.n;
 }
 
+/* Decode world-atlas topojson → array of [lng,lat][] polygon rings */
+function decodeTopojson(topo) {
+  const sc = topo.transform?.scale ?? [1, 1];
+  const tr = topo.transform?.translate ?? [0, 0];
+  const rings = [];
+  const decodeArc = (idx) => {
+    const rev = idx < 0;
+    const arc = topo.arcs[rev ? ~idx : idx];
+    let x = 0, y = 0;
+    const pts = arc.map(([dx, dy]) => {
+      x += dx; y += dy;
+      return [x * sc[0] + tr[0], y * sc[1] + tr[1]];
+    });
+    return rev ? pts.reverse() : pts;
+  };
+  for (const geo of topo.objects.land.geometries) {
+    const polys = geo.type === 'Polygon' ? [geo.arcs] : geo.arcs;
+    for (const poly of polys) {
+      for (const ringArcs of poly) {
+        rings.push(ringArcs.flatMap(decodeArc));
+      }
+    }
+  }
+  return rings;
+}
+
 /* ═══════════════════════════════════════
    SUB-COMPONENTS
 ═══════════════════════════════════════ */
@@ -91,6 +116,43 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   const inertiaRef = useRef({ x: 0, y: 0 });
   const dragRef = useRef(null);
   const frameRef = useRef(null);
+  const canvasRef = useRef(null);
+  const ringsRef = useRef(null); // decoded topojson rings
+
+  /* Fetch world atlas topojson once */
+  useEffect(() => {
+    fetch(WORLD_ATLAS_URL)
+      .then((r) => r.json())
+      .then((topo) => { ringsRef.current = decodeTopojson(topo); })
+      .catch(() => { ringsRef.current = []; });
+  }, []);
+
+  /* Draw continents on canvas whenever rotation or zoom changes */
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rings = ringsRef.current;
+    const W = canvas.width;
+    const H = canvas.height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+
+    /* Wait for data — schedule a redraw once it arrives */
+    if (!rings) {
+      const id = setTimeout(() => {
+        if (ringsRef.current) {
+          const c2 = canvasRef.current;
+          if (!c2) return;
+          const ctx2 = c2.getContext('2d');
+          ctx2.clearRect(0, 0, c2.width, c2.height);
+          drawRings(ctx2, ringsRef.current, rotY, rotX, zoom, c2.width, c2.height);
+        }
+      }, 150);
+      return () => clearTimeout(id);
+    }
+
+    drawRings(ctx, rings, rotY, rotX, zoom, W, H);
+  }, [rotY, rotX, zoom]);
 
   /* Auto-rotate & inertia */
   useEffect(() => {
@@ -127,37 +189,38 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   };
   const stopDrag = () => { setDragging(false); dragRef.current = null; };
 
-  /* Pin placement — map pixel → lat/lng approximation */
+  /* Click on sphere → lat/lng via inverse orthographic projection */
   const handleClick = (e) => {
     if (!e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const px = e.clientX - rect.left;
-    const py = e.clientY - rect.top;
-    const cx = rect.width / 2;
+    const R  = Math.min(rect.width, rect.height) / 2 - 2;
+    const cx = rect.width  / 2;
     const cy = rect.height / 2;
-    const r = Math.min(rect.width, rect.height) / 2 * 0.88;
-    const dx = px - cx;
-    const dy = py - cy;
-    if (dx * dx + dy * dy > r * r) return;
-    const rawLng = (dx / r) * 160 + rotY;
-    const rawLat = -(dy / r) * 80 + rotX;
-    const lat = Math.max(-90, Math.min(90, rawLat));
-    const lng = ((((rawLng % 360) + 540) % 360) - 180);
+    const nx = (e.clientX - rect.left  - cx) / R; /* normalised -1..1 */
+    const ny = (e.clientY - rect.top   - cy) / R;
+    if (nx * nx + ny * ny > 1) return; /* outside sphere */
+
+    /* Sphere surface z (front hemisphere) */
+    const z3 = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+    /* x3 = nx, y3 = -ny in screen coords */
+    const x3 =  nx;
+    const y3 = -ny;
+
+    /* Inverse tilt rotation */
+    const tilt   = rotX * Math.PI / 180;
+    const y3pre  = y3 * Math.cos(tilt) - z3 * Math.sin(tilt);
+    const z3pre  = y3 * Math.sin(tilt) + z3 * Math.cos(tilt);
+
+    const lat = Math.asin(Math.max(-1, Math.min(1, y3pre))) * 180 / Math.PI;
+    const lng = ((Math.atan2(x3, z3pre) * 180 / Math.PI + rotY + 540) % 360) - 180;
     onPin({ lat, lng, label: nearestCountry(lat, lng) });
   };
 
-  /* Project lat/lng → % offsets on globe face */
+  /* Project lat/lng → % position on the globe div (for pin markers) */
   const project = (lat, lng) => {
-    const r = 47;
-    const dlng = lng - rotY;
-    const normLng = ((((dlng % 360) + 540) % 360) - 180);
-    const x = 50 + (normLng / 160) * r;
-    const y = 50 - ((lat - rotX) / 80) * r;
-    return { x, y };
+    const { x: px, y: py } = orthoProject(lng, lat, rotY, rotX, 47, 50, 50);
+    return { x: px, y: py };
   };
-
-  const bgX = 50 + ((rotY % 360) * 0.14);
-  const bgY = 50 + (rotX * 0.22);
 
   return (
     <div className="relative mx-auto" style={{ width: '100%', maxWidth: '390px', aspectRatio: '1' }}>
@@ -188,7 +251,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         aria-label="Interactive globe — click to place pin"
         className="w-full h-full rounded-full overflow-hidden cursor-crosshair select-none"
         style={{
-          background: '#040C18',
+          background: 'radial-gradient(circle at 38% 35%, #0A1F3A 0%, #040C18 60%, #020810 100%)',
           border: '2px solid rgba(255,0,128,0.35)',
           boxShadow:
             '0 0 40px rgba(255,0,128,0.25), 0 0 80px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.6)',
@@ -199,10 +262,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         onMouseUp={stopDrag}
         onMouseLeave={stopDrag}
         onTouchStart={(e) => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
-        onTouchMove={(e) => {
-          e.preventDefault();
-          moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-        }}
+        onTouchMove={(e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }}
         onTouchEnd={stopDrag}
         onWheel={(e) => setZoom((z) => Math.max(1, Math.min(2.4, z - e.deltaY * 0.001)))}
         onKeyDown={(e) => {
@@ -210,33 +270,31 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
           if (e.key === '-') setZoom((z) => Math.max(1, z * 0.8));
         }}
       >
-        {/* Map layer */}
-        <div
-          className="absolute inset-0 rounded-full opacity-60"
-          style={{
-            backgroundImage: `url("${MAP_URL}")`,
-            backgroundSize: `${zoom * 100}%`,
-            backgroundPosition: `${bgX}% ${bgY}%`,
-            transition: dragging ? 'none' : 'background-position 0.05s linear',
-            filter: 'brightness(0.55) saturate(0.5) hue-rotate(195deg)',
-            mixBlendMode: 'screen',
-          }}
+        {/* Canvas map layer */}
+        <canvas
+          ref={canvasRef}
+          width={390}
+          height={390}
+          className="absolute inset-0 rounded-full pointer-events-none"
+          style={{ mixBlendMode: 'screen', opacity: 0.92 }}
         />
+
         {/* Atmosphere gradient */}
         <div
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle at 33% 30%, rgba(0,60,100,0.45) 0%, rgba(0,10,30,0.82) 70%, rgba(0,0,0,0.95) 100%)',
+              'radial-gradient(circle at 33% 30%, rgba(0,60,120,0.15) 0%, rgba(0,8,22,0.45) 65%, rgba(0,0,0,0.82) 100%)',
           }}
         />
         {/* Latitude/longitude grid */}
         <div
-          className="absolute inset-0 rounded-full pointer-events-none opacity-15"
+          className="absolute inset-0 rounded-full pointer-events-none"
           style={{
+            opacity: 0.12,
             backgroundImage:
-              'repeating-linear-gradient(0deg,rgba(0,255,255,0.07) 0px,transparent 1px,transparent 45px,rgba(0,255,255,0.07) 45px),' +
-              'repeating-linear-gradient(90deg,rgba(0,255,255,0.07) 0px,transparent 1px,transparent 45px,rgba(0,255,255,0.07) 45px)',
+              'repeating-linear-gradient(0deg,rgba(0,255,255,0.1) 0px,transparent 1px,transparent 45px,rgba(0,255,255,0.1) 45px),' +
+              'repeating-linear-gradient(90deg,rgba(0,255,255,0.1) 0px,transparent 1px,transparent 45px,rgba(0,255,255,0.1) 45px)',
           }}
         />
         {/* Edge glow */}
@@ -244,7 +302,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
           className="absolute inset-0 rounded-full pointer-events-none"
           style={{
             background:
-              'radial-gradient(circle at 50% 50%, transparent 60%, rgba(255,0,128,0.18) 85%, rgba(255,0,128,0.08) 100%)',
+              'radial-gradient(circle at 50% 50%, transparent 58%, rgba(255,0,128,0.22) 83%, rgba(255,0,128,0.1) 100%)',
           }}
         />
 
@@ -295,6 +353,81 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
       </div>
     </div>
   );
+}
+
+/* ── Orthographic projection helpers ────────────────────────────────
+   Converts (lng, lat) + globe rotation to canvas (x, y).
+   Returns { x, y, visible } — visible = false when point is on the back
+   hemisphere and should not be drawn. */
+function orthoProject(lng, lat, rotY, rotX, R, cx, cy) {
+  const phi   = ((lng - rotY + 540) % 360 - 180) * Math.PI / 180;
+  const theta = lat * Math.PI / 180;
+  const tilt  = rotX * Math.PI / 180;
+
+  /* Unit-sphere 3-D coordinates (before tilt) */
+  const x3      =  Math.cos(theta) * Math.sin(phi);
+  const y3pre   =  Math.sin(theta);
+  const z3pre   =  Math.cos(theta) * Math.cos(phi);
+
+  /* Rotate around X-axis by tilt angle */
+  const y3 = y3pre * Math.cos(tilt) + z3pre * Math.sin(tilt);
+  const z3 = -y3pre * Math.sin(tilt) + z3pre * Math.cos(tilt);
+
+  return {
+    x: cx + x3 * R,
+    y: cy - y3 * R,
+    visible: z3 > 0,
+  };
+}
+
+/* Draw decoded topojson rings onto a canvas using orthographic projection */
+function drawRings(ctx, rings, rotY, rotX, zoom, W, H) {
+  ctx.save();
+  const R  = (W / 2 - 2) * zoom;
+  const cx = W / 2;
+  const cy = H / 2;
+
+  /* Clip strictly to the sphere circle */
+  ctx.beginPath();
+  ctx.arc(cx, cy, W / 2 - 1, 0, Math.PI * 2);
+  ctx.clip();
+
+  ctx.shadowColor = '#00FFCC';
+  ctx.shadowBlur  = 5;
+
+  for (const ring of rings) {
+    ctx.beginPath();
+    let penDown = false;
+
+    for (const [lng, lat] of ring) {
+      const { x, y, visible } = orthoProject(lng, lat, rotY, rotX, R, cx, cy);
+      if (!visible) {
+        penDown = false;   /* lift pen when crossing to back hemisphere */
+        continue;
+      }
+      if (!penDown) { ctx.moveTo(x, y); penDown = true; }
+      else ctx.lineTo(x, y);
+    }
+
+    /* Only fill/close if the ring started on the front face */
+    if (penDown) ctx.closePath();
+    ctx.fillStyle   = 'rgba(0, 210, 185, 0.2)';
+    ctx.strokeStyle = '#00FFDD';
+    ctx.lineWidth   = 0.65;
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  /* Specular highlight blob */
+  ctx.shadowBlur = 0;
+  const grad = ctx.createRadialGradient(cx - W * 0.12, cy - H * 0.18, 0, cx, cy, R);
+  grad.addColorStop(0,   'rgba(140,220,255,0.10)');
+  grad.addColorStop(0.5, 'rgba(60,120,200,0.04)');
+  grad.addColorStop(1,   'transparent');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.restore();
 }
 
 /* ── Feud Answer Slot ── */
@@ -464,15 +597,18 @@ export default function SimulationPreview({
     [seed],
   );
 
-  const { playUiClick, playSuccess, playWarning } = useSound();
+  const { playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning } = useSound();
 
   const sfx = useMemo(
     () => ({
-      click: () => { if (!isMuted) playUiClick(); },
-      good: () => { if (!isMuted) playSuccess(); },
-      bad: () => { if (!isMuted) playWarning(); },
+      click:    () => { if (!isMuted) playUiClick(); },
+      pin:      () => { if (!isMuted) playPinDrop(); },
+      submit:   () => { if (!isMuted) playSubmit(); },
+      navigate: () => { if (!isMuted) playNavigate(); },
+      good:     () => { if (!isMuted) playSuccess(); },
+      bad:      () => { if (!isMuted) playWarning(); },
     }),
-    [isMuted, playUiClick, playSuccess, playWarning],
+    [isMuted, playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning],
   );
 
   /* ── Running score refs (avoid stale closure) ── */
@@ -547,7 +683,6 @@ export default function SimulationPreview({
   }
 
   function handleGeoNext() {
-    sfx.click();
     if (geoIndex + 1 >= geoPrompts.length) {
       setGameStage('s1-recap');
     } else {
@@ -600,7 +735,7 @@ export default function SimulationPreview({
   }
 
   function handleFeudPass() {
-    sfx.click();
+    sfx.navigate();
     setFeudQIdx((i) => (i + 1) % feudDeck.length);
     setFeudInput('');
   }
@@ -612,7 +747,7 @@ export default function SimulationPreview({
 
   /* ───── Recap continuation ───── */
   function handleRecapContinue(from) {
-    sfx.click();
+    sfx.navigate();
     if (from === 's1-recap') setGameStage('stage2');
     else if (from === 's2-recap') { setGameStage('stage3'); }
     else {
@@ -682,7 +817,7 @@ export default function SimulationPreview({
             </div>
 
             <GlobeBoard
-              onPin={(pt) => { if (!geoFeedback) { setPinnedPt(pt); sfx.click(); } }}
+              onPin={(pt) => { if (!geoFeedback) { setPinnedPt(pt); sfx.pin(); } }}
               pinned={pinnedPt}
               revealTarget={geoFeedback ? { lat: geoFeedback.lat, lng: geoFeedback.lng } : null}
             />
@@ -693,7 +828,7 @@ export default function SimulationPreview({
                 type="button"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.94, y: 5 }}
-                onClick={handleGeoSubmit}
+                onClick={() => { sfx.submit(); handleGeoSubmit(); }}
                 disabled={!pinnedPt}
                 className={`btn-arcade w-full mt-4 py-3 ${pinnedPt ? 'btn-lime' : 'btn-ghost'}`}
                 style={pinnedPt ? {} : { borderColor: '#1A1A1A', color: '#333' }}
@@ -747,7 +882,7 @@ export default function SimulationPreview({
                   type="button"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.94, y: 5 }}
-                  onClick={handleGeoNext}
+                  onClick={() => { sfx.navigate(); handleGeoNext(); }}
                   className="btn-arcade btn-cyan w-full mt-3 py-2.5"
                 >
                   {geoIndex + 1 < geoPrompts.length ? '▶ NEXT CLUE' : '▶ SEE STAGE RECAP'}
@@ -894,7 +1029,7 @@ export default function SimulationPreview({
                   type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.94, y: 5 }}
-                  onClick={() => { setFeudActive(true); sfx.click(); }}
+                  onClick={() => { setFeudActive(true); sfx.submit(); }}
                   className="btn-arcade btn-magenta px-12 py-4 text-base"
                 >
                   ▶ START THE CLOCK
