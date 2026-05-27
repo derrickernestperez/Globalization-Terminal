@@ -3,6 +3,7 @@ import LandingPage from './components/LandingPage.jsx';
 import SimulationPreview from './components/SimulationPreview.jsx';
 import ResultsScreen from './components/ResultsScreen.jsx';
 import LibraryModal from './components/LibraryModal.jsx';
+import Footer from './components/Footer.jsx';
 import { ContentLibrary } from './data/ContentLibrary.js';
 import useSound from './hooks/useSound.js';
 
@@ -35,7 +36,7 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [selectedResourceId, setSelectedResourceId] = useState(ContentLibrary.resources[0].id);
-  const { startBgMusic, stopBgMusic } = useSound();
+  const { startBgMusic, stopBgMusic, playMagicClick, playCongratsFinish } = useSound();
 
   /* Start music on first user interaction (browsers block autoplay before this) */
   useEffect(() => {
@@ -52,6 +53,17 @@ export default function App() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* Global magic click sound on all buttons */
+  useEffect(() => {
+    const handleButtonClick = (e) => {
+      if (!isMuted && e.target.closest('button')) {
+        playMagicClick();
+      }
+    };
+    document.addEventListener('click', handleButtonClick, { capture: true });
+    return () => document.removeEventListener('click', handleButtonClick, { capture: true });
+  }, [isMuted, playMagicClick]);
 
   /* Keep music in sync with mute toggle and view changes */
   useEffect(() => {
@@ -148,9 +160,12 @@ export default function App() {
             challengerData={challengerData}
             onPlayAgain={handlePlayAgain}
             onOpenLibrary={openLibrary}
+            onCongratsSound={playCongratsFinish}
           />
         )}
       </div>
+
+      <Footer />
 
       <LibraryModal
         isOpen={isLibraryOpen}

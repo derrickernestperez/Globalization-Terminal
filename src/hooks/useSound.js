@@ -145,6 +145,37 @@ export default function useSound() {
     [playSequence],
   );
 
+  /* ─── SFX: Magic / grimoire button click ─── */
+  const playMagicClick = useCallback(
+    () =>
+      playSequence([
+        { frequency: noteToFreq(96), duration: 0.09, volume: 0.038, type: 'sine', delay: 0 },
+        { frequency: noteToFreq(100), duration: 0.07, volume: 0.03, type: 'sine', delay: 0.04 },
+        { frequency: noteToFreq(103), duration: 0.10, volume: 0.022, type: 'sine', delay: 0.07 },
+      ]),
+    [playSequence],
+  );
+
+  /* ─── SFX: Congratulations / project complete fanfare ─── */
+  const playCongratsFinish = useCallback(
+    () =>
+      playSequence([
+        { frequency: noteToFreq(60), duration: 0.12, volume: 0.07, type: 'triangle', delay: 0 },
+        { frequency: noteToFreq(64), duration: 0.12, volume: 0.07, type: 'triangle', delay: 0.10 },
+        { frequency: noteToFreq(67), duration: 0.12, volume: 0.08, type: 'triangle', delay: 0.20 },
+        { frequency: noteToFreq(72), duration: 0.12, volume: 0.08, type: 'square',   delay: 0.30 },
+        { frequency: noteToFreq(76), duration: 0.12, volume: 0.09, type: 'square',   delay: 0.40 },
+        { frequency: noteToFreq(79), duration: 0.12, volume: 0.09, type: 'triangle', delay: 0.50 },
+        { frequency: noteToFreq(84), duration: 0.20, volume: 0.10, type: 'triangle', delay: 0.60 },
+        { frequency: noteToFreq(91), duration: 0.10, volume: 0.055, type: 'sine',    delay: 0.72 },
+        { frequency: noteToFreq(96), duration: 0.10, volume: 0.05,  type: 'sine',    delay: 0.80 },
+        { frequency: noteToFreq(84), duration: 0.55, volume: 0.09, type: 'triangle', delay: 0.88 },
+        { frequency: noteToFreq(88), duration: 0.55, volume: 0.08, type: 'triangle', delay: 0.92 },
+        { frequency: noteToFreq(91), duration: 0.55, volume: 0.07, type: 'sine',     delay: 0.96 },
+      ]),
+    [playSequence],
+  );
+
   /* ─── SFX: Stage win fanfare ─── */
   const playWin = useCallback(
     () =>
@@ -266,6 +297,8 @@ export default function useSound() {
     setSoundEnabled,
     toggleSound: () => setSoundEnabled((v) => !v),
     playUiClick,
+    playMagicClick,
+    playCongratsFinish,
     playPinDrop,
     playSubmit,
     playNavigate,

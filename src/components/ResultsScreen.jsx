@@ -12,7 +12,7 @@ const encodeToken = (username, scores) => {
   }
 };
 
-export default function ResultsScreen({ username, scores, challengerData, onPlayAgain, onOpenLibrary }) {
+export default function ResultsScreen({ username, scores, challengerData, onPlayAgain, onOpenLibrary, onCongratsSound }) {
   const [copied, setCopied] = useState(false);
 
   const isVs = !!challengerData;
@@ -30,6 +30,7 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
         });
       burst({ y: 0.55, x: 0.4 });
       setTimeout(() => burst({ y: 0.5, x: 0.6 }), 250);
+      if (onCongratsSound) onCongratsSound();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
