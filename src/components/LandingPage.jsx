@@ -182,16 +182,16 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                 id="tour-how-to-play"
                 type="button"
                 onClick={() => openTour(0)}
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.94, y: 3 }}
                 aria-label="How to play"
-                className="mt-2 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full font-display text-lg sm:text-xl leading-none p-0 btn-arcade btn-cyan shrink-0"
-                style={{ boxShadow: '0 0 14px rgba(0,255,255,0.35)' }}
+                className="mt-2 w-full btn-arcade btn-cyan py-1.5 px-1 font-mono-arcade text-[7px] sm:text-[8px] tracking-widest leading-none shrink-0"
+                style={{ boxShadow: '0 0 12px rgba(0,255,255,0.25)' }}
               >
-                ?
+                ◈ HOW TO PLAY
               </motion.button>
             ) : (
-              <div className="mt-2 w-8 h-8 sm:w-9 sm:h-9 shrink-0 invisible" aria-hidden="true" />
+              <div className="mt-2 w-full py-1.5 shrink-0 invisible" aria-hidden="true" />
             )}
           </div>
         ))}
