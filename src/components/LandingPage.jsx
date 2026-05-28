@@ -158,7 +158,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-x-1.5 sm:gap-x-2 gap-y-1 w-full max-w-lg mb-3 sm:mb-5 items-start"
+        className="grid grid-cols-3 gap-x-1.5 sm:gap-x-2 gap-y-1 w-full max-w-lg mb-5 sm:mb-5 items-start"
       >
         {STAGES_INFO.map((s, i) => (
           <div key={s.name} className="flex flex-col items-center min-w-0">
@@ -185,8 +185,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.94, y: 3 }}
                 aria-label="How to play"
-                className="mt-2 w-full btn-arcade btn-cyan py-1.5 px-0.5 font-mono-arcade text-[6px] sm:text-[8px] tracking-[0.12em] sm:tracking-widest leading-none shrink-0 whitespace-nowrap"
-                style={{ boxShadow: '0 0 12px rgba(0,255,255,0.25)' }}
+                className="mt-2 w-full btn-arcade btn-cyan btn-arcade-micro"
               >
                 ◈ HOW TO PLAY
               </motion.button>

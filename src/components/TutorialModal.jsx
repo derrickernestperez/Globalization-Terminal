@@ -166,9 +166,9 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
     };
   }, [isOpen, step, measureTarget, current.target, isMobile]);
 
-  /* Elevate highlighted target above blur overlay */
+  /* Elevate highlighted target above dim overlay — desktop only (mobile sheet stays on top) */
   useEffect(() => {
-    if (!isOpen || !current.target) return undefined;
+    if (!isOpen || !current.target || isMobile) return undefined;
     const el = document.getElementById(current.target);
     if (!el) return undefined;
     const prev = {
@@ -184,7 +184,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       el.style.zIndex = prev.zIndex;
       el.style.boxShadow = prev.boxShadow;
     };
-  }, [isOpen, step, current.target, current.color]);
+  }, [isOpen, step, current.target, current.color, isMobile]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -253,7 +253,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
           <div
             className={
               useMobileSheet
-                ? 'fixed inset-x-0 bottom-0 z-[204] flex justify-center px-3 pt-2 pointer-events-none'
+                ? 'fixed inset-x-0 bottom-0 z-[220] flex justify-center px-3 pt-2 pointer-events-none'
                 : useDesktopCenter
                   ? 'fixed inset-0 z-[204] flex items-center justify-center px-3 pointer-events-none'
                   : 'fixed inset-0 z-[204] pointer-events-none'
