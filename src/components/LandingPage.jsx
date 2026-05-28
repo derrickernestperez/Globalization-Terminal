@@ -106,7 +106,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-4 pb-20 relative overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-start px-3 sm:px-4 pb-24 sm:pb-20 relative overflow-x-hidden">
       {/* Grid overlay */}
       <div className="fixed inset-0 arcade-grid-bg opacity-100 pointer-events-none" />
       {/* World map ghost */}
@@ -126,7 +126,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0, y: -25 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-2xl mt-10 mb-5 text-center"
+        className="w-full max-w-2xl mt-6 sm:mt-10 mb-3 sm:mb-5 text-center"
       >
         <p className="font-mono-arcade text-[10px] text-[#FF0080] tracking-[0.45em] uppercase mb-3 opacity-75">
           ■ ACADEMIC SIMULATION SYSTEM ■
@@ -158,7 +158,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-2 w-full max-w-lg mb-6"
+        className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full max-w-lg mb-4 sm:mb-6"
       >
         {STAGES_INFO.map((s, i) => (
           <button
@@ -166,28 +166,40 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
             id={i === 0 ? 'tour-stage-geo' : i === 1 ? 'tour-stage-flag' : 'tour-stage-feud'}
             type="button"
             onClick={() => openTour(i + 1)}
-            className="arcade-card p-3 text-center transition-all hover:brightness-110"
+            className="arcade-card p-2 sm:p-3 text-center transition-all hover:brightness-110"
             style={{ borderColor: s.color, borderWidth: '2px' }}
           >
-            <s.icon size={18} style={{ color: s.color }} className="mx-auto mb-1.5" />
-            <p className="font-mono-arcade text-[7px] tracking-widest opacity-40 mb-0.5">{s.label}</p>
-            <p className="font-display text-sm leading-none mb-1" style={{ color: s.color }}>
+            <s.icon size={16} style={{ color: s.color }} className="mx-auto mb-1 sm:mb-1.5 sm:w-[18px] sm:h-[18px]" />
+            <p className="font-mono-arcade text-[6px] sm:text-[7px] tracking-widest opacity-50 mb-0.5">{s.label}</p>
+            <p className="font-display text-xs sm:text-sm leading-none mb-0.5 sm:mb-1" style={{ color: s.color }}>
               {s.name}
             </p>
-            <p className="text-[8px] text-[#666] leading-snug">{s.desc}</p>
+            <p className="text-[7px] sm:text-[8px] text-[#666] leading-snug hidden sm:block">{s.desc}</p>
           </button>
         ))}
       </motion.div>
 
       {/* ── FORM CARD ──────────────────────────────────── */}
       <motion.div
-        id="tour-form"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="arcade-card w-full max-w-md p-6"
+        className="arcade-card w-full max-w-md p-4 sm:p-6 relative"
         style={{ borderColor: '#2A2A2A' }}
       >
+        {/* ? help button — compact, always visible */}
+        <motion.button
+          id="tour-how-to-play"
+          type="button"
+          onClick={() => openTour(0)}
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          aria-label="How to play"
+          className="absolute -top-4 right-3 sm:right-4 z-10 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-display text-xl sm:text-2xl leading-none p-0 btn-arcade btn-cyan"
+          style={{ boxShadow: '0 0 16px rgba(0,255,255,0.35)' }}
+        >
+          ?
+        </motion.button>
         <AnimatePresence mode="wait">
           {/* ── IDLE MODE ── */}
           {mode === 'idle' && (
@@ -197,50 +209,37 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div
-                className="flex items-center justify-between gap-3 mb-4 pb-3"
-                style={{ borderBottom: '1px solid #222' }}
-              >
-                <p className="font-mono-arcade text-[8px] text-[#444] tracking-widest uppercase">
-                  ▶ Ready to deploy
-                </p>
-                <motion.button
-                  id="tour-how-to-play"
-                  type="button"
-                  onClick={() => openTour(0)}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.96 }}
-                  className="btn-arcade btn-cyan px-3 py-1.5 text-[8px] shrink-0"
+              <div id="tour-call-sign" className="mb-3 sm:mb-4">
+                <label
+                  htmlFor="call-sign-input"
+                  className="font-mono-arcade text-[10px] sm:text-[11px] text-[#CCCCCC] tracking-widest uppercase block mb-2"
                 >
-                  ◈ HOW TO PLAY
-                </motion.button>
+                  ▶ YOUR CALL SIGN
+                </label>
+                <input
+                  id="call-sign-input"
+                  className="arcade-input"
+                  type="text"
+                  maxLength={20}
+                  placeholder="COMMANDER..."
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); setError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSolo(); }}
+                  autoFocus
+                />
               </div>
-
-              <label className="font-mono-arcade text-[10px] text-[#666] tracking-widest uppercase block mb-2">
-                ▶ YOUR CALL SIGN
-              </label>
-              <input
-                className="arcade-input mb-4"
-                type="text"
-                maxLength={20}
-                placeholder="COMMANDER..."
-                value={name}
-                onChange={(e) => { setName(e.target.value); setError(''); }}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSolo(); }}
-                autoFocus
-              />
 
               {error && (
                 <p className="font-mono-arcade text-[9px] text-[#FF0080] mb-3 tracking-widest">{error}</p>
               )}
 
-              <div className="flex gap-3 mb-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-3">
                 <motion.button
                   type="button"
                   onClick={handleSolo}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.94, y: 5 }}
-                  className="btn-arcade btn-lime flex-1 py-3"
+                  className="btn-arcade btn-lime w-full sm:flex-1 py-3 text-[11px] sm:text-sm"
                 >
                   ▶ PLAY SOLO
                 </motion.button>
@@ -250,7 +249,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                   onClick={() => { setMode('token'); setError(''); }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.94, y: 5 }}
-                  className="btn-arcade btn-cyan flex-1 py-3"
+                  className="btn-arcade btn-cyan w-full sm:flex-1 py-3 text-[11px] sm:text-sm"
                 >
                   ◈ CHALLENGER
                 </motion.button>
