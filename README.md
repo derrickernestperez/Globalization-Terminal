@@ -98,6 +98,14 @@ npm run build
 
 ---
 
+## 📖 Code Guide for Teammates
+
+New to the codebase? Read **[CODE_GUIDE.md](./CODE_GUIDE.md)** — a plain-English map of every file, what's safe to edit, and what to avoid.
+
+For Git setup and team workflow, see **[SETUP.md](./SETUP.md)**.
+
+---
+
 ## Team
 
 | Name | Role |

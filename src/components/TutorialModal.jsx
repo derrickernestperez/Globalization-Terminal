@@ -5,6 +5,9 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 
+/** Stage preview cards — center the tour card on desktop so it never overlaps the highlight */
+const STAGE_TOUR_TARGETS = new Set(['tour-stage-geo', 'tour-stage-flag', 'tour-stage-feud']);
+
 const TOUR_STEPS = [
   {
     target: null,
@@ -177,7 +180,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       boxShadow: el.style.boxShadow,
     };
     el.style.position = 'relative';
-    el.style.zIndex = '210';
+    el.style.zIndex = '203';
     el.style.boxShadow = `0 0 0 3px ${current.color}, 0 0 24px ${current.color}55`;
     return () => {
       el.style.position = prev.position;
@@ -229,7 +232,9 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
   })();
 
   const useMobileSheet = isMobile;
-  const useDesktopCenter = !isMobile && !current.target;
+  const useDesktopCenter = !isMobile && (
+    !current.target || STAGE_TOUR_TARGETS.has(current.target)
+  );
 
   const modal = (
     <AnimatePresence>
@@ -255,8 +260,8 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
               useMobileSheet
                 ? 'fixed inset-x-0 bottom-0 z-[220] flex justify-center px-3 pt-2 pointer-events-none'
                 : useDesktopCenter
-                  ? 'fixed inset-0 z-[204] flex items-center justify-center px-3 pointer-events-none'
-                  : 'fixed inset-0 z-[204] pointer-events-none'
+                  ? 'fixed inset-0 z-[230] flex items-center justify-center px-3 pointer-events-none'
+                  : 'fixed inset-0 z-[230] pointer-events-none'
             }
             style={
               useMobileSheet
