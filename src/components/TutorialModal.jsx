@@ -16,6 +16,7 @@ const TOUR_STEPS = [
       'Tap NEXT to spotlight each part of the game.',
       'Takes less than a minute — let\'s go.',
     ],
+    mobileLine: 'Quick tour of all 3 stages — tap NEXT, takes under a minute.',
   },
   {
     target: 'tour-stage-geo',
@@ -28,6 +29,7 @@ const TOUR_STEPS = [
       'Pin the correct country for a perfect score.',
       '30 seconds per clue · 4 clues total.',
     ],
+    mobileLine: 'Drop a pin on the globe · drag/zoom · 100 pts if correct · 30s × 4 clues.',
   },
   {
     target: 'tour-stage-flag',
@@ -40,6 +42,7 @@ const TOUR_STEPS = [
       'Uses World-Systems Theory from class.',
       '10 flags · 50 pts each correct sort.',
     ],
+    mobileLine: 'Sort each flag into CORE, SEMI, or PERIPHERY · 10 flags · 50 pts each.',
   },
   {
     target: 'tour-stage-feud',
@@ -52,6 +55,7 @@ const TOUR_STEPS = [
       'Get one right → jumps to the next unanswered Q.',
       'PASS skips ahead · skipped Qs come back later.',
     ],
+    mobileLine: '8 Qs · 2-min clock · SUBMIT answers · PASS skips · skipped Qs return.',
   },
   {
     target: 'tour-call-sign',
@@ -63,6 +67,7 @@ const TOUR_STEPS = [
       'Then hit PLAY SOLO to start the run.',
       'Your personal best saves on this device.',
     ],
+    mobileLine: 'Enter your call sign · hit PLAY SOLO · personal best saves locally.',
   },
   {
     target: 'tour-challenger',
@@ -74,6 +79,7 @@ const TOUR_STEPS = [
       'Send it via Messenger, FB, or Viber.',
       'Friend pastes it here in ◈ CHALLENGER mode.',
     ],
+    mobileLine: 'Copy your challenge code after solo · friend pastes it in CHALLENGER.',
   },
   {
     target: 'tour-grimoire',
@@ -85,6 +91,7 @@ const TOUR_STEPS = [
       'Review course PDFs tied to each stage.',
       'Use it to prep before you play.',
     ],
+    mobileLine: 'Open the Grimoire anytime · review course PDFs before you play.',
   },
 ];
 
@@ -170,7 +177,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       boxShadow: el.style.boxShadow,
     };
     el.style.position = 'relative';
-    el.style.zIndex = '203';
+    el.style.zIndex = '210';
     el.style.boxShadow = `0 0 0 3px ${current.color}, 0 0 24px ${current.color}55`;
     return () => {
       el.style.position = prev.position;
@@ -236,30 +243,11 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
           aria-modal="true"
           aria-label="How to play tour"
         >
-          {/* Blurred backdrop — always on */}
+          {/* Dim + blur backdrop */}
           <div
-            className="fixed inset-0 z-[201] backdrop-blur-md"
-            style={{ background: 'rgba(0,0,0,0.72)' }}
+            className={`fixed inset-0 z-[201] ${isMobile ? 'backdrop-blur-md' : ''}`}
+            style={{ background: isMobile ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.78)' }}
           />
-
-          {/* Desktop spotlight cutout (skip on welcome + mobile) */}
-          {spot && !isMobile && (
-            <motion.div
-              key={`spot-${step}`}
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ type: 'spring', damping: 22, stiffness: 280 }}
-              className="fixed pointer-events-none rounded-lg z-[202]"
-              style={{
-                top: spot.top,
-                left: spot.left,
-                width: spot.width,
-                height: spot.height,
-                boxShadow: '0 0 0 9999px rgba(0,0,0,0.55)',
-                border: `2px solid ${current.color}`,
-              }}
-            />
-          )}
 
           {/* Step card — mobile: bottom sheet; desktop: anchored or centered */}
           <div
@@ -313,14 +301,21 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
               </button>
             </div>
 
-            <ul className="space-y-2 mb-4">
-              {current.lines.map((line) => (
-                <li key={line} className="flex gap-2 text-[11px] sm:text-xs text-[#AAA] leading-snug">
-                  <span style={{ color: current.color }} className="shrink-0">▸</span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
+            {isMobile ? (
+              <p className="font-mono-arcade text-[6px] leading-[1.35] text-[#AAA] mb-3 tracking-[0.01em]">
+                <span style={{ color: current.color }}>▸ </span>
+                {current.mobileLine ?? current.lines.join(' · ')}
+              </p>
+            ) : (
+              <ul className="space-y-2 mb-4">
+                {current.lines.map((line) => (
+                  <li key={line} className="flex gap-2 text-[11px] sm:text-xs text-[#AAA] leading-snug">
+                    <span style={{ color: current.color }} className="shrink-0">▸</span>
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <div className="flex justify-center gap-1.5 mb-4">
               {TOUR_STEPS.map((s, i) => (

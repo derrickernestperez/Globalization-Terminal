@@ -185,7 +185,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.94, y: 3 }}
                 aria-label="How to play"
-                className="mt-2 w-full btn-arcade btn-cyan py-1.5 px-1 font-mono-arcade text-[7px] sm:text-[8px] tracking-widest leading-none shrink-0"
+                className="mt-2 w-full btn-arcade btn-cyan py-1.5 px-0.5 font-mono-arcade text-[6px] sm:text-[8px] tracking-[0.12em] sm:tracking-widest leading-none shrink-0 whitespace-nowrap"
                 style={{ boxShadow: '0 0 12px rgba(0,255,255,0.25)' }}
               >
                 ◈ HOW TO PLAY

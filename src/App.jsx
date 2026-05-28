@@ -136,7 +136,7 @@ export default function App() {
       </div>
 
       {/* ── Main content ───────────────────────────────────── */}
-      <div className="pt-8 relative z-10">
+      <div className="pt-8 relative">
         {currentView === 'landing' && (
           <LandingPage
             onStartSolo={handleStartSolo}
