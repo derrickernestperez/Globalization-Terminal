@@ -147,7 +147,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         <h2 className="font-display text-[clamp(2rem,8vw,4.5rem)] text-[#FF0080] text-glow-magenta tracking-widest leading-none">
           TERMINAL
         </h2>
-        <p className="font-mono-arcade text-[10px] text-[#333] mt-3 tracking-[0.28em]">
+        <p className="font-mono-arcade text-[8px] sm:text-[10px] text-[#444] mt-2 sm:mt-3 tracking-[0.18em] sm:tracking-[0.28em] leading-relaxed px-1">
           ABSURDIST ARCADE EDITION ◆ WORLD-SYSTEMS THEORY UNLOCKED
         </p>
       </motion.div>
@@ -158,24 +158,42 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-1.5 sm:gap-2 w-full max-w-lg mb-4 sm:mb-6"
+        className="grid grid-cols-3 gap-x-1.5 sm:gap-x-2 gap-y-1 w-full max-w-lg mb-3 sm:mb-5 items-start"
       >
         {STAGES_INFO.map((s, i) => (
-          <button
-            key={s.name}
-            id={i === 0 ? 'tour-stage-geo' : i === 1 ? 'tour-stage-flag' : 'tour-stage-feud'}
-            type="button"
-            onClick={() => openTour(i + 1)}
-            className="arcade-card p-2 sm:p-3 text-center transition-all hover:brightness-110"
-            style={{ borderColor: s.color, borderWidth: '2px' }}
-          >
-            <s.icon size={16} style={{ color: s.color }} className="mx-auto mb-1 sm:mb-1.5 sm:w-[18px] sm:h-[18px]" />
-            <p className="font-mono-arcade text-[6px] sm:text-[7px] tracking-widest opacity-50 mb-0.5">{s.label}</p>
-            <p className="font-display text-xs sm:text-sm leading-none mb-0.5 sm:mb-1" style={{ color: s.color }}>
-              {s.name}
-            </p>
-            <p className="text-[7px] sm:text-[8px] text-[#666] leading-snug hidden sm:block">{s.desc}</p>
-          </button>
+          <div key={s.name} className="flex flex-col items-center min-w-0">
+            <button
+              id={i === 0 ? 'tour-stage-geo' : i === 1 ? 'tour-stage-flag' : 'tour-stage-feud'}
+              type="button"
+              onClick={() => openTour(i + 1)}
+              className="arcade-card w-full p-2 sm:p-3 text-center transition-all hover:brightness-110 min-h-[88px] sm:min-h-[104px] flex flex-col items-center justify-center"
+              style={{ borderColor: s.color, borderWidth: '2px' }}
+            >
+              <s.icon size={16} style={{ color: s.color }} className="mx-auto mb-1 sm:mb-1.5" />
+              <p className="font-mono-arcade text-[6px] sm:text-[7px] tracking-widest opacity-50 mb-0.5">{s.label}</p>
+              <p className="font-display text-[11px] sm:text-sm leading-none mb-0.5 sm:mb-1" style={{ color: s.color }}>
+                {s.name}
+              </p>
+              <p className="text-[6px] sm:text-[8px] text-[#666] leading-snug hidden sm:block">{s.desc}</p>
+            </button>
+
+            {i === 1 ? (
+              <motion.button
+                id="tour-how-to-play"
+                type="button"
+                onClick={() => openTour(0)}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                aria-label="How to play"
+                className="mt-2 w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full font-display text-lg sm:text-xl leading-none p-0 btn-arcade btn-cyan shrink-0"
+                style={{ boxShadow: '0 0 14px rgba(0,255,255,0.35)' }}
+              >
+                ?
+              </motion.button>
+            ) : (
+              <div className="mt-2 w-8 h-8 sm:w-9 sm:h-9 shrink-0 invisible" aria-hidden="true" />
+            )}
+          </div>
         ))}
       </motion.div>
 
@@ -184,22 +202,9 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="arcade-card w-full max-w-md p-4 sm:p-6 relative"
+        className="arcade-card w-full max-w-md p-4 sm:p-6"
         style={{ borderColor: '#2A2A2A' }}
       >
-        {/* ? help button — compact, always visible */}
-        <motion.button
-          id="tour-how-to-play"
-          type="button"
-          onClick={() => openTour(0)}
-          whileHover={{ scale: 1.08 }}
-          whileTap={{ scale: 0.92 }}
-          aria-label="How to play"
-          className="absolute -top-4 right-3 sm:right-4 z-10 w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full font-display text-xl sm:text-2xl leading-none p-0 btn-arcade btn-cyan"
-          style={{ boxShadow: '0 0 16px rgba(0,255,255,0.35)' }}
-        >
-          ?
-        </motion.button>
         <AnimatePresence mode="wait">
           {/* ── IDLE MODE ── */}
           {mode === 'idle' && (
