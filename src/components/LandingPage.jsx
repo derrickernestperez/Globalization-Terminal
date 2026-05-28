@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Flag, Globe2, Users } from 'lucide-react';
 import TutorialModal from './TutorialModal.jsx';
+
+const TOUR_SEEN_KEY = 'gt-tour-seen';
 
 const decodeToken = (raw) => {
   try {
@@ -57,6 +59,24 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
     setTutorialStart(start);
     setTutorialOpen(true);
   };
+
+  const closeTour = () => {
+    setTutorialOpen(false);
+    try {
+      localStorage.setItem(TOUR_SEEN_KEY, '1');
+    } catch { /* ignore */ }
+  };
+
+  /* First visit — auto-start the guided tour */
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(TOUR_SEEN_KEY)) return undefined;
+      const t = setTimeout(() => openTour(0), 700);
+      return () => clearTimeout(t);
+    } catch {
+      return undefined;
+    }
+  }, []);
 
   const nameOk = name.trim().length > 0;
 
@@ -138,7 +158,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-2 w-full max-w-lg mb-3"
+        className="grid grid-cols-3 gap-2 w-full max-w-lg mb-6"
       >
         {STAGES_INFO.map((s, i) => (
           <button
@@ -159,17 +179,6 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         ))}
       </motion.div>
 
-      <motion.button
-        type="button"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.35 }}
-        onClick={() => openTour(0)}
-        className="btn-arcade btn-cyan mb-6 px-6 py-2 text-[10px]"
-      >
-        ◈ HOW TO PLAY
-      </motion.button>
-
       {/* ── FORM CARD ──────────────────────────────────── */}
       <motion.div
         id="tour-form"
@@ -188,6 +197,25 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
+              <div
+                className="flex items-center justify-between gap-3 mb-4 pb-3"
+                style={{ borderBottom: '1px solid #222' }}
+              >
+                <p className="font-mono-arcade text-[8px] text-[#444] tracking-widest uppercase">
+                  ▶ Ready to deploy
+                </p>
+                <motion.button
+                  id="tour-how-to-play"
+                  type="button"
+                  onClick={() => openTour(0)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.96 }}
+                  className="btn-arcade btn-cyan px-3 py-1.5 text-[8px] shrink-0"
+                >
+                  ◈ HOW TO PLAY
+                </motion.button>
+              </div>
+
               <label className="font-mono-arcade text-[10px] text-[#666] tracking-widest uppercase block mb-2">
                 ▶ YOUR CALL SIGN
               </label>
@@ -379,7 +407,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
       <TutorialModal
         isOpen={tutorialOpen}
         startStep={tutorialStart}
-        onClose={() => setTutorialOpen(false)}
+        onClose={closeTour}
       />
     </div>
   );
