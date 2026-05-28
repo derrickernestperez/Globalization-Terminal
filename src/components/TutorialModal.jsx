@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+
+const MOBILE_QUERY = '(max-width: 639px)';
 
 const TOUR_STEPS = [
   {
@@ -92,14 +95,14 @@ function clamp(n, min, max) {
 export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
   const [step, setStep] = useState(startStep);
   const [spot, setSpot] = useState(null);
-  const [isMobile, setIsMobile] = useState(
-    () => typeof window !== 'undefined' && window.innerWidth < 640,
-  );
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(MOBILE_QUERY).matches;
+  });
 
   const current = TOUR_STEPS[step];
   const isFirst = step === 0;
   const isLast = step === TOUR_STEPS.length - 1;
-  const isCentered = !current.target || isMobile;
 
   const measureTarget = useCallback(() => {
     if (!current.target) {
@@ -127,15 +130,16 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
   }, [isOpen, startStep]);
 
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    if (current.target) {
+    if (current.target && !isMobile) {
       const el = document.getElementById(current.target);
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -153,11 +157,11 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       window.removeEventListener('resize', measureTarget);
       window.removeEventListener('scroll', measureTarget, true);
     };
-  }, [isOpen, step, measureTarget, current.target]);
+  }, [isOpen, step, measureTarget, current.target, isMobile]);
 
   /* Elevate highlighted target above blur overlay */
   useEffect(() => {
-    if (!isOpen || !current.target || isMobile) return undefined;
+    if (!isOpen || !current.target) return undefined;
     const el = document.getElementById(current.target);
     if (!el) return undefined;
     const prev = {
@@ -173,7 +177,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       el.style.zIndex = prev.zIndex;
       el.style.boxShadow = prev.boxShadow;
     };
-  }, [isOpen, step, current.target, current.color, isMobile]);
+  }, [isOpen, step, current.target, current.color]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -188,13 +192,13 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
 
   const back = () => setStep((s) => Math.max(0, s - 1));
 
-  const tooltipStyle = (() => {
-    const cardW = Math.min(
-      typeof window !== 'undefined' ? window.innerWidth - 24 : 360,
-      360,
-    );
+  /* Desktop-only anchored position (mobile uses flex bottom sheet) */
+  const desktopStyle = (() => {
+    if (isMobile) return null;
 
-    if (isCentered && isFirst) {
+    const cardW = Math.min(window.innerWidth - 24, 360);
+
+    if (!current.target) {
       return {
         top: '50%',
         left: '50%',
@@ -203,24 +207,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
       };
     }
 
-    if (isMobile) {
-      return {
-        bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        width: cardW,
-        top: 'auto',
-      };
-    }
-
-    if (!spot) {
-      return {
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: cardW,
-      };
-    }
+    if (!spot) return null;
 
     const cardH = 280;
     const gap = 16;
@@ -234,7 +221,10 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
     return { top, left, width: cardW, transform: 'none' };
   })();
 
-  return (
+  const useMobileSheet = isMobile;
+  const useDesktopCenter = !isMobile && !current.target;
+
+  const modal = (
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -242,6 +232,9 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[200]"
+          role="dialog"
+          aria-modal="true"
+          aria-label="How to play tour"
         >
           {/* Blurred backdrop — always on */}
           <div
@@ -268,21 +261,36 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
             />
           )}
 
-          {/* Step card */}
-          <motion.div
-            key={`card-${step}`}
-            initial={{ opacity: 0, y: isCentered && isFirst ? 0 : 20, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ type: 'spring', damping: 20 }}
-            className="fixed z-[204] arcade-card p-4 sm:p-5 max-h-[85vh] overflow-y-auto"
-            style={{
-              ...tooltipStyle,
-              borderColor: current.color,
-              borderWidth: '2px',
-              boxShadow: `0 0 30px ${current.color}33, 0 20px 60px rgba(0,0,0,0.9)`,
-            }}
+          {/* Step card — mobile: bottom sheet; desktop: anchored or centered */}
+          <div
+            className={
+              useMobileSheet
+                ? 'fixed inset-x-0 bottom-0 z-[204] flex justify-center px-3 pt-2 pointer-events-none'
+                : useDesktopCenter
+                  ? 'fixed inset-0 z-[204] flex items-center justify-center px-3 pointer-events-none'
+                  : 'fixed inset-0 z-[204] pointer-events-none'
+            }
+            style={
+              useMobileSheet
+                ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }
+                : undefined
+            }
           >
+            <motion.div
+              key={`card-${step}`}
+              initial={{ opacity: 0, y: useMobileSheet ? 24 : 0, scale: useMobileSheet ? 1 : 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: useMobileSheet ? 16 : 0, scale: useMobileSheet ? 1 : 0.96 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 320 }}
+              className="pointer-events-auto arcade-card p-4 sm:p-5 w-full max-w-sm max-h-[min(70vh,520px)] overflow-y-auto box-border"
+              style={{
+                ...(useMobileSheet || useDesktopCenter ? {} : desktopStyle),
+                borderColor: current.color,
+                borderWidth: '2px',
+                boxShadow: `0 0 30px ${current.color}33, 0 20px 60px rgba(0,0,0,0.9)`,
+                maxWidth: useMobileSheet ? 'min(100%, 24rem)' : undefined,
+              }}
+            >
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="min-w-0">
                 <p
@@ -334,12 +342,12 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
               ))}
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 min-w-0">
               {!isFirst ? (
                 <button
                   type="button"
                   onClick={back}
-                  className="btn-arcade btn-ghost flex items-center gap-1 px-3 sm:px-4 py-2.5 text-[9px] sm:text-[10px]"
+                  className="btn-arcade btn-ghost flex items-center gap-1 px-3 sm:px-4 py-2.5 text-[9px] sm:text-[10px] shrink-0"
                 >
                   <ChevronLeft size={12} /> BACK
                 </button>
@@ -347,7 +355,7 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="btn-arcade btn-ghost px-3 sm:px-4 py-2.5 text-[9px] sm:text-[10px]"
+                  className="btn-arcade btn-ghost px-3 sm:px-4 py-2.5 text-[9px] sm:text-[10px] shrink-0"
                 >
                   SKIP
                 </button>
@@ -357,18 +365,22 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.94, y: 4 }}
                 onClick={next}
-                className="btn-arcade btn-lime flex-1 py-2.5 flex items-center justify-center gap-1 text-[9px] sm:text-[10px]"
+                className="btn-arcade btn-lime flex-1 min-w-0 py-2.5 flex items-center justify-center gap-1 text-[9px] sm:text-[10px]"
               >
                 {isLast ? '▶ START PLAYING' : (
                   <>NEXT <ChevronRight size={12} /></>
                 )}
               </motion.button>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(modal, document.body);
 }
 
 export { TOUR_STEPS };
