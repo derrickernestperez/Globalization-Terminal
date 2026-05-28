@@ -1,13 +1,25 @@
+import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Flag, Globe2, Users, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
-const STAGES = [
+const TOUR_STEPS = [
   {
-    icon: Globe2,
-    label: 'STAGE 01',
-    name: 'GEO-GUESSR',
+    target: null,
+    color: '#FF0080',
+    label: 'WELCOME',
+    title: 'GLOBALIZATION TERMINAL',
+    lines: [
+      'This quick tour walks you through all 3 stages.',
+      'Tap NEXT to spotlight each part of the game.',
+      'Takes less than a minute — let\'s go.',
+    ],
+  },
+  {
+    target: 'tour-stage-geo',
     color: '#00FFFF',
-    steps: [
+    label: 'STAGE 01',
+    title: 'GEO-GUESSR',
+    lines: [
       'Read the clue and drop a pin on the globe.',
       'Drag to rotate · scroll or +/- to zoom.',
       'Pin the correct country for a perfect score.',
@@ -15,11 +27,11 @@ const STAGES = [
     ],
   },
   {
-    icon: Flag,
-    label: 'STAGE 02',
-    name: 'FLAG SORT',
+    target: 'tour-stage-flag',
     color: '#FFD700',
-    steps: [
+    label: 'STAGE 02',
+    title: 'FLAG SORT',
+    lines: [
       'A country flag appears on screen.',
       'Sort it into CORE, SEMI, or PERIPHERY.',
       'Uses World-Systems Theory from class.',
@@ -27,20 +39,148 @@ const STAGES = [
     ],
   },
   {
-    icon: Users,
-    label: 'STAGE 03',
-    name: 'GLOBAL FEUD',
+    target: 'tour-stage-feud',
     color: '#FF0080',
-    steps: [
+    label: 'STAGE 03',
+    title: 'GLOBAL FEUD',
+    lines: [
       '8 questions · 2-minute clock.',
       'Type an answer and hit SUBMIT.',
       'Get one right → jumps to the next unanswered Q.',
       'PASS skips ahead · skipped Qs come back later.',
     ],
   },
+  {
+    target: 'tour-form',
+    color: '#39FF14',
+    label: 'GET STARTED',
+    title: 'YOUR CALL SIGN',
+    lines: [
+      'Enter your name, then choose PLAY SOLO.',
+      'Complete all 3 stages to lock in your score.',
+      'Your personal best saves on this device.',
+    ],
+  },
+  {
+    target: 'tour-challenger',
+    color: '#00FFFF',
+    label: 'CHALLENGER',
+    title: 'BEAT A FRIEND',
+    lines: [
+      'After solo play, copy your challenge code.',
+      'Send it via Messenger, FB, or Viber.',
+      'Friend pastes it here in ◈ CHALLENGER mode.',
+    ],
+  },
+  {
+    target: 'tour-grimoire',
+    color: '#FFD700',
+    label: 'GRIMOIRE',
+    title: 'STUDY DOSSIER',
+    lines: [
+      'Open the Grimoire anytime during the game.',
+      'Review course PDFs tied to each stage.',
+      'Use it to prep before you play.',
+    ],
+  },
 ];
 
-export default function TutorialModal({ isOpen, onClose }) {
+function clamp(n, min, max) {
+  return Math.min(Math.max(n, min), max);
+}
+
+export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
+  const [step, setStep] = useState(startStep);
+  const [spot, setSpot] = useState(null);
+
+  const current = TOUR_STEPS[step];
+  const isFirst = step === 0;
+  const isLast = step === TOUR_STEPS.length - 1;
+
+  const measureTarget = useCallback(() => {
+    if (!current.target) {
+      setSpot(null);
+      return;
+    }
+    const el = document.getElementById(current.target);
+    if (!el) {
+      setSpot(null);
+      return;
+    }
+    const pad = 10;
+    const r = el.getBoundingClientRect();
+    setSpot({
+      top: r.top - pad,
+      left: r.left - pad,
+      width: r.width + pad * 2,
+      height: r.height + pad * 2,
+    });
+  }, [current.target]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    setStep(startStep);
+  }, [isOpen, startStep]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    if (current.target) {
+      const el = document.getElementById(current.target);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    measureTarget();
+    const t1 = setTimeout(measureTarget, 350);
+    const t2 = setTimeout(measureTarget, 700);
+
+    window.addEventListener('resize', measureTarget);
+    window.addEventListener('scroll', measureTarget, true);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener('resize', measureTarget);
+      window.removeEventListener('scroll', measureTarget, true);
+    };
+  }, [isOpen, step, measureTarget, current.target]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [isOpen]);
+
+  const next = () => {
+    if (isLast) onClose();
+    else setStep((s) => s + 1);
+  };
+
+  const back = () => setStep((s) => Math.max(0, s - 1));
+
+  /* Tooltip position */
+  const tooltipStyle = (() => {
+    if (!spot) {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'min(92vw, 22rem)',
+      };
+    }
+    const cardH = 260;
+    const gap = 16;
+    const vw = window.innerWidth;
+    const cardW = Math.min(vw - 24, 360);
+    let top = spot.top + spot.height + gap;
+    if (top + cardH > window.innerHeight - 12) {
+      top = spot.top - cardH - gap;
+    }
+    top = clamp(top, 12, window.innerHeight - cardH - 12);
+    const left = clamp(spot.left + spot.width / 2 - cardW / 2, 12, vw - cardW - 12);
+    return { top, left, width: cardW, transform: 'none' };
+  })();
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -48,100 +188,125 @@ export default function TutorialModal({ isOpen, onClose }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] bg-black/92 flex items-center justify-center p-3 sm:p-5"
-          onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+          className="fixed inset-0 z-[200]"
         >
+          {/* Full dim or spotlight cutout */}
+          {spot ? (
+            <motion.div
+              key={`spot-${step}`}
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+              className="fixed pointer-events-none rounded-lg"
+              style={{
+                top: spot.top,
+                left: spot.left,
+                width: spot.width,
+                height: spot.height,
+                boxShadow: '0 0 0 9999px rgba(0,0,0,0.88)',
+                border: `2px solid ${current.color}`,
+                zIndex: 201,
+              }}
+            />
+          ) : (
+            <div className="fixed inset-0 bg-black/88" style={{ zIndex: 201 }} />
+          )}
+
+          {/* Step card */}
           <motion.div
-            initial={{ scale: 0.88, y: 36 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.88, y: 36 }}
+            key={`card-${step}`}
+            initial={{ opacity: 0, y: 20, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10 }}
             transition={{ type: 'spring', damping: 20 }}
-            className="arcade-card w-full max-w-lg max-h-[90vh] overflow-y-auto relative"
-            style={{ borderColor: '#FF0080', borderWidth: '2px' }}
+            className="fixed z-[202] arcade-card p-4"
+            style={{
+              ...tooltipStyle,
+              borderColor: current.color,
+              borderWidth: '2px',
+              boxShadow: `0 0 30px ${current.color}33, 0 20px 60px rgba(0,0,0,0.9)`,
+            }}
           >
-            <div
-              className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
-              style={{ background: '#0A0A0A', borderBottom: '1px solid #2A2A2A' }}
-            >
+            <div className="flex items-start justify-between gap-3 mb-3">
               <div>
-                <p className="font-mono-arcade text-[9px] text-[#FF0080] tracking-[0.35em] uppercase">
-                  ◈ Mission Briefing
+                <p
+                  className="font-mono-arcade text-[8px] tracking-[0.35em] uppercase mb-1"
+                  style={{ color: current.color }}
+                >
+                  ◈ Step {step + 1} / {TOUR_STEPS.length} · {current.label}
                 </p>
-                <h2 className="font-display text-2xl text-white tracking-wide">HOW TO PLAY</h2>
+                <h3 className="font-display text-2xl text-white tracking-wide leading-none">
+                  {current.title}
+                </h3>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="btn-arcade btn-ghost p-2"
-                aria-label="Close tutorial"
+                className="btn-arcade btn-ghost p-1.5 shrink-0"
+                aria-label="Skip tour"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </div>
 
-            <div className="p-4 space-y-4">
-              <div
-                className="arcade-card p-4"
-                style={{ borderColor: '#39FF14', borderWidth: '1px' }}
-              >
-                <p className="font-mono-arcade text-[9px] text-[#39FF14] tracking-widest mb-2 uppercase">
-                  ▶ Getting Started
-                </p>
-                <ul className="space-y-1.5 text-xs text-[#888]">
-                  <li className="flex gap-2"><span className="text-[#39FF14]">▸</span>Enter your call sign, then choose <strong className="text-[#39FF14]">PLAY SOLO</strong> or <strong className="text-[#00FFFF]">◈ CHALLENGER</strong>.</li>
-                  <li className="flex gap-2"><span className="text-[#39FF14]">▸</span>Complete all 3 stages to lock in your total score.</li>
-                  <li className="flex gap-2"><span className="text-[#39FF14]">▸</span>Open the <strong className="text-[#FFD700]">GRIMOIRE</strong> anytime to review course PDFs.</li>
-                </ul>
-              </div>
-
-              {STAGES.map((s) => (
-                <div
-                  key={s.name}
-                  className="arcade-card p-4"
-                  style={{ borderColor: s.color, borderWidth: '2px' }}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <s.icon size={20} style={{ color: s.color }} />
-                    <div>
-                      <p className="font-mono-arcade text-[7px] tracking-widest opacity-50">{s.label}</p>
-                      <p className="font-display text-lg leading-none" style={{ color: s.color }}>{s.name}</p>
-                    </div>
-                  </div>
-                  <ul className="space-y-1.5">
-                    {s.steps.map((step) => (
-                      <li key={step} className="flex gap-2 text-xs text-[#777] leading-snug">
-                        <span style={{ color: s.color }}>▸</span>
-                        <span>{step}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <ul className="space-y-2 mb-4">
+              {current.lines.map((line) => (
+                <li key={line} className="flex gap-2 text-xs text-[#888] leading-snug">
+                  <span style={{ color: current.color }} className="shrink-0">▸</span>
+                  <span>{line}</span>
+                </li>
               ))}
+            </ul>
 
-              <div
-                className="arcade-card p-4"
-                style={{ borderColor: '#FFD700', borderWidth: '1px', borderStyle: 'dashed' }}
-              >
-                <p className="font-mono-arcade text-[9px] text-[#FFD700] tracking-widest mb-2 uppercase">
-                  ◈ Challenge a Friend
-                </p>
-                <ul className="space-y-1.5 text-xs text-[#888]">
-                  <li className="flex gap-2"><span className="text-[#FFD700]">▸</span>After solo play, tap <strong className="text-[#FFD700]">COPY CODE</strong> on the results screen.</li>
-                  <li className="flex gap-2"><span className="text-[#FFD700]">▸</span>Send the code to a friend via Messenger, FB, or Viber.</li>
-                  <li className="flex gap-2"><span className="text-[#FFD700]">▸</span>They open the game → <strong className="text-[#00FFFF]">◈ CHALLENGER</strong> → paste the code → beat your score.</li>
-                </ul>
-              </div>
+            {/* Progress dots */}
+            <div className="flex justify-center gap-1.5 mb-4">
+              {TOUR_STEPS.map((s, i) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => setStep(i)}
+                  aria-label={`Go to step ${i + 1}`}
+                  style={{
+                    width: i === step ? 18 : 6,
+                    height: 6,
+                    background: i === step ? current.color : '#2A2A2A',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    transition: 'width 0.2s ease, background 0.2s ease',
+                  }}
+                />
+              ))}
             </div>
 
-            <div className="p-4 pt-0">
+            <div className="flex gap-2">
+              {!isFirst ? (
+                <button
+                  type="button"
+                  onClick={back}
+                  className="btn-arcade btn-ghost flex items-center gap-1 px-4 py-2.5 text-[10px]"
+                >
+                  <ChevronLeft size={12} /> BACK
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="btn-arcade btn-ghost px-4 py-2.5 text-[10px]"
+                >
+                  SKIP
+                </button>
+              )}
               <motion.button
                 type="button"
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.94, y: 5 }}
-                onClick={onClose}
-                className="btn-arcade btn-lime w-full py-3"
+                whileTap={{ scale: 0.94, y: 4 }}
+                onClick={next}
+                className="btn-arcade btn-lime flex-1 py-2.5 flex items-center justify-center gap-1 text-[10px]"
               >
-                ▶ GOT IT — LET&apos;S PLAY
+                {isLast ? '▶ START PLAYING' : (
+                  <>NEXT <ChevronRight size={12} /></>
+                )}
               </motion.button>
             </div>
           </motion.div>
@@ -150,3 +315,5 @@ export default function TutorialModal({ isOpen, onClose }) {
     </AnimatePresence>
   );
 }
+
+export { TOUR_STEPS };

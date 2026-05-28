@@ -50,6 +50,13 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
   const [challenger, setChallenger] = useState(null);
   const [error, setError] = useState('');
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  const [tutorialStart, setTutorialStart] = useState(0);
+
+  const openTour = (start = 0) => {
+    setMode('idle');
+    setTutorialStart(start);
+    setTutorialOpen(true);
+  };
 
   const nameOk = name.trim().length > 0;
 
@@ -127,16 +134,18 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
 
       {/* ── STAGE PREVIEW CARDS ────────────────────────── */}
       <motion.div
+        id="tour-stages"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="grid grid-cols-3 gap-2 w-full max-w-lg mb-3"
       >
-        {STAGES_INFO.map((s) => (
+        {STAGES_INFO.map((s, i) => (
           <button
             key={s.name}
+            id={i === 0 ? 'tour-stage-geo' : i === 1 ? 'tour-stage-flag' : 'tour-stage-feud'}
             type="button"
-            onClick={() => setTutorialOpen(true)}
+            onClick={() => openTour(i + 1)}
             className="arcade-card p-3 text-center transition-all hover:brightness-110"
             style={{ borderColor: s.color, borderWidth: '2px' }}
           >
@@ -155,7 +164,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.35 }}
-        onClick={() => setTutorialOpen(true)}
+        onClick={() => openTour(0)}
         className="btn-arcade btn-cyan mb-6 px-6 py-2 text-[10px]"
       >
         ◈ HOW TO PLAY
@@ -163,6 +172,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
 
       {/* ── FORM CARD ──────────────────────────────────── */}
       <motion.div
+        id="tour-form"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
@@ -207,6 +217,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                   ▶ PLAY SOLO
                 </motion.button>
                 <motion.button
+                  id="tour-challenger"
                   type="button"
                   onClick={() => { setMode('token'); setError(''); }}
                   whileHover={{ scale: 1.02 }}
@@ -218,6 +229,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
               </div>
 
               <button
+                id="tour-grimoire"
                 type="button"
                 onClick={() => onOpenLibrary()}
                 className="w-full py-2.5 font-mono-arcade text-[9px] text-[#333] tracking-widest uppercase border border-[#222] hover:border-[#FFD700] hover:text-[#FFD700] transition-all"
@@ -364,7 +376,11 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         </AnimatePresence>
       </motion.div>
 
-      <TutorialModal isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
+      <TutorialModal
+        isOpen={tutorialOpen}
+        startStep={tutorialStart}
+        onClose={() => setTutorialOpen(false)}
+      />
     </div>
   );
 }
