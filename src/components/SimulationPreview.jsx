@@ -743,42 +743,48 @@ export default function SimulationPreview({
     }, 900);
   }
 
+  /* ───── Stage 3 helpers ───── */
+  function isFeudQuestionAnswered(q, revealed) {
+    const rev = revealed[q.id];
+    return rev != null && rev.size > 0;
+  }
+
+  function findNextUnansweredFeudIdx(fromIdx, revealed) {
+    for (let offset = 1; offset <= feudDeck.length; offset++) {
+      const idx = (fromIdx + offset) % feudDeck.length;
+      if (!isFeudQuestionAnswered(feudDeck[idx], revealed)) return idx;
+    }
+    return -1;
+  }
+
   /* ───── Stage 3 handlers ───── */
   function handleFeudSubmit() {
     const q = feudDeck[feudQIdx];
     const val = feudInput.trim().toLowerCase();
     if (!val || feudAutoAdvancing) return;
     const already = revealedByQ[q.id] ?? new Set();
+    const newSet = new Set(already);
     let matched = false;
     q.answers.forEach((ans, idx) => {
-      if (already.has(idx)) return;
+      if (newSet.has(idx)) return;
       if (ans.match.some((m) => val.includes(m))) {
         matched = true;
-        setRevealedByQ((prev) => {
-          const nxt = { ...prev };
-          nxt[q.id] = new Set([...(prev[q.id] ?? []), idx]);
-          return nxt;
-        });
+        newSet.add(idx);
         addS3(ans.points);
       }
     });
     if (matched) {
       sfx.good();
       setFeudInput('');
-      /* Auto-advance to next question after the flip animation plays */
+      const newRevealed = { ...revealedByQ, [q.id]: newSet };
+      setRevealedByQ(newRevealed);
       setFeudAutoAdvancing(true);
       setTimeout(() => {
         setFeudAutoAdvancing(false);
         setFeudInput('');
-        setFeudQIdx((i) => {
-          const next = i + 1;
-          if (next >= feudDeck.length) {
-            /* Answered through all questions — end the round */
-            endFeud();
-            return i;
-          }
-          return next;
-        });
+        const nextIdx = findNextUnansweredFeudIdx(feudQIdx, newRevealed);
+        if (nextIdx === -1) endFeud();
+        else setFeudQIdx(nextIdx);
       }, 900);
     } else {
       sfx.bad();
@@ -789,7 +795,9 @@ export default function SimulationPreview({
   function handleFeudPass() {
     if (feudAutoAdvancing) return;
     sfx.navigate();
-    setFeudQIdx((i) => (i + 1) % feudDeck.length);
+    const nextIdx = findNextUnansweredFeudIdx(feudQIdx, revealedByQ);
+    if (nextIdx === -1) endFeud();
+    else setFeudQIdx(nextIdx);
     setFeudInput('');
   }
 
@@ -1076,8 +1084,8 @@ export default function SimulationPreview({
                 <ul className="text-sm text-[#666] mb-8 space-y-2 max-w-xs mx-auto text-left">
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions, hidden answer slots</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>2-minute clock — race the board</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → auto-advance to next Q</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Don't know it? Hit PASS to skip</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → jumps to next unanswered Q</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>PASS skips ahead · skipped Qs come back later</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Timer hits zero → round ends automatically</li>
                 </ul>
                 <motion.button

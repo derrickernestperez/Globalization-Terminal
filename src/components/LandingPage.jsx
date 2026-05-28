@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Flag, Globe2, Users } from 'lucide-react';
+import TutorialModal from './TutorialModal.jsx';
 
 const decodeToken = (raw) => {
   try {
@@ -38,7 +39,7 @@ const STAGES_INFO = [
     label: 'STAGE 03',
     name: 'GLOBAL FEUD',
     color: '#FF0080',
-    desc: '8 questions. 2-minute clock. Pass loops the board. Answer fast.',
+    desc: '8 questions. 2-minute clock. Skipped Qs return later.',
   },
 ];
 
@@ -48,6 +49,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
   const [token, setToken] = useState('');
   const [challenger, setChallenger] = useState(null);
   const [error, setError] = useState('');
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const nameOk = name.trim().length > 0;
 
@@ -128,12 +130,14 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-3 gap-2 w-full max-w-lg mb-6"
+        className="grid grid-cols-3 gap-2 w-full max-w-lg mb-3"
       >
         {STAGES_INFO.map((s) => (
-          <div
+          <button
             key={s.name}
-            className="arcade-card p-3 text-center"
+            type="button"
+            onClick={() => setTutorialOpen(true)}
+            className="arcade-card p-3 text-center transition-all hover:brightness-110"
             style={{ borderColor: s.color, borderWidth: '2px' }}
           >
             <s.icon size={18} style={{ color: s.color }} className="mx-auto mb-1.5" />
@@ -142,9 +146,20 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
               {s.name}
             </p>
             <p className="text-[8px] text-[#666] leading-snug">{s.desc}</p>
-          </div>
+          </button>
         ))}
       </motion.div>
+
+      <motion.button
+        type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.35 }}
+        onClick={() => setTutorialOpen(true)}
+        className="btn-arcade btn-cyan mb-6 px-6 py-2 text-[10px]"
+      >
+        ◈ HOW TO PLAY
+      </motion.button>
 
       {/* ── FORM CARD ──────────────────────────────────── */}
       <motion.div
@@ -348,6 +363,8 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
           )}
         </AnimatePresence>
       </motion.div>
+
+      <TutorialModal isOpen={tutorialOpen} onClose={() => setTutorialOpen(false)} />
     </div>
   );
 }

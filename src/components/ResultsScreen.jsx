@@ -33,6 +33,7 @@ const saveBest = (name, total) => {
 
 export default function ResultsScreen({ username, scores, challengerData, onPlayAgain, onOpenLibrary, onCongratsSound }) {
   const [copied, setCopied] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
   const [prevBest, setPrevBest] = useState(null);
 
@@ -73,6 +74,18 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
 
   const buildMessage = () =>
     `⚡ GLOBALIZATION TERMINAL CHALLENGE ⚡\n\nI am ${username} and I scored ${scores.total} pts!\nCan you beat my score? 🌐\n\nPlay here: ${SITE_URL}\n\nPaste my challenge code in the ◈ CHALLENGER mode:\n${token}`;
+
+  const handleCopyCode = () => {
+    if (!token) return;
+    navigator.clipboard.writeText(token).then(() => {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+    });
+  };
+
+  const selectToken = (e) => {
+    e.target.select();
+  };
 
   const handleCopy = () => {
     if (!token) return;
@@ -252,13 +265,34 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
               SHARE YOUR CODE — PASTE IN ◈ CHALLENGER MODE TO COMPETE
             </p>
 
-            {/* Token display */}
-            <div
-              className="p-2 mb-3 font-mono-arcade text-[9px] text-[#555] break-all select-all cursor-text"
-              style={{ background: '#0A0A0A', border: '1px solid #1A1A1A' }}
+            {/* Token — tap to select, easy mobile copy */}
+            <textarea
+              readOnly
+              value={token}
+              rows={3}
+              onClick={selectToken}
+              onFocus={selectToken}
+              aria-label="Challenge code"
+              className="w-full p-3 mb-2 font-mono-arcade text-[11px] text-[#FFD700] leading-relaxed resize-none outline-none"
+              style={{
+                background: '#0A0A0A',
+                border: '2px solid #FFD700',
+                boxShadow: '0 0 12px rgba(255,215,0,0.15)',
+                WebkitUserSelect: 'all',
+                userSelect: 'all',
+              }}
+            />
+
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.94, y: 5 }}
+              onClick={handleCopyCode}
+              className={`btn-arcade w-full py-2.5 mb-2 flex items-center justify-center gap-2 text-[10px] ${copiedCode ? 'btn-lime' : 'btn-gold'}`}
             >
-              {token}
-            </div>
+              <Copy size={11} />
+              {copiedCode ? '✓ CODE COPIED!' : '⧉ COPY CODE ONLY'}
+            </motion.button>
 
             {/* Action buttons */}
             <div className="flex gap-2">
