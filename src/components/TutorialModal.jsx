@@ -5,8 +5,15 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 
-/** Stage preview cards — center the tour card on desktop so it never overlaps the highlight */
+/** Stage preview cards — pin tour card to bottom on desktop so it clears the stage row */
 const STAGE_TOUR_TARGETS = new Set(['tour-stage-geo', 'tour-stage-flag', 'tour-stage-feud']);
+
+const TOUR_Z = {
+  overlay: 500,
+  backdrop: 501,
+  spotlight: 502,
+  card: 503,
+};
 
 const TOUR_STEPS = [
   {
@@ -169,24 +176,14 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
     };
   }, [isOpen, step, measureTarget, current.target, isMobile]);
 
-  /* Elevate highlighted target above dim overlay — desktop only (mobile sheet stays on top) */
+  /* Subtle ring on target — no z-index (page z-index would paint above the portal) */
   useEffect(() => {
     if (!isOpen || !current.target || isMobile) return undefined;
     const el = document.getElementById(current.target);
     if (!el) return undefined;
-    const prev = {
-      position: el.style.position,
-      zIndex: el.style.zIndex,
-      boxShadow: el.style.boxShadow,
-    };
-    el.style.position = 'relative';
-    el.style.zIndex = '203';
-    el.style.boxShadow = `0 0 0 3px ${current.color}, 0 0 24px ${current.color}55`;
-    return () => {
-      el.style.position = prev.position;
-      el.style.zIndex = prev.zIndex;
-      el.style.boxShadow = prev.boxShadow;
-    };
+    const prev = { boxShadow: el.style.boxShadow };
+    el.style.boxShadow = `0 0 0 2px ${current.color}88`;
+    return () => { el.style.boxShadow = prev.boxShadow; };
   }, [isOpen, step, current.target, current.color, isMobile]);
 
   useEffect(() => {
@@ -232,9 +229,10 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
   })();
 
   const useMobileSheet = isMobile;
-  const useDesktopCenter = !isMobile && (
-    !current.target || STAGE_TOUR_TARGETS.has(current.target)
-  );
+  const isStageStep = current.target && STAGE_TOUR_TARGETS.has(current.target);
+  const useDesktopCenter = !isMobile && !current.target;
+  const useDesktopStageBottom = !isMobile && isStageStep;
+  const useDesktopAnchored = !isMobile && current.target && !isStageStep;
 
   const modal = (
     <AnimatePresence>
@@ -243,45 +241,70 @@ export default function TutorialModal({ isOpen, onClose, startStep = 0 }) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200]"
+          className="fixed inset-0"
+          style={{ zIndex: TOUR_Z.overlay }}
           role="dialog"
           aria-modal="true"
           aria-label="How to play tour"
         >
           {/* Dim + blur backdrop */}
           <div
-            className={`fixed inset-0 z-[201] ${isMobile ? 'backdrop-blur-md' : ''}`}
-            style={{ background: isMobile ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.78)' }}
+            className={`fixed inset-0 ${isMobile ? 'backdrop-blur-md' : ''}`}
+            style={{ zIndex: TOUR_Z.backdrop, background: isMobile ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.78)' }}
           />
 
-          {/* Step card — mobile: bottom sheet; desktop: anchored or centered */}
+          {/* Desktop spotlight frame — drawn inside portal so it never covers the tour card */}
+          {spot && !isMobile && current.target && (
+            <motion.div
+              key={`spot-${step}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="fixed pointer-events-none rounded-lg"
+              style={{
+                zIndex: TOUR_Z.spotlight,
+                top: spot.top,
+                left: spot.left,
+                width: spot.width,
+                height: spot.height,
+                border: `3px solid ${current.color}`,
+                boxShadow: `0 0 28px ${current.color}55, inset 0 0 20px ${current.color}15`,
+              }}
+            />
+          )}
+
+          {/* Step card — mobile: bottom sheet; desktop: bottom / center / anchored */}
           <div
             className={
               useMobileSheet
-                ? 'fixed inset-x-0 bottom-0 z-[220] flex justify-center px-3 pt-2 pointer-events-none'
-                : useDesktopCenter
-                  ? 'fixed inset-0 z-[230] flex items-center justify-center px-3 pointer-events-none'
-                  : 'fixed inset-0 z-[230] pointer-events-none'
+                ? 'fixed inset-x-0 bottom-0 flex justify-center px-3 pt-2 pointer-events-none'
+                : useDesktopStageBottom
+                  ? 'fixed inset-x-0 bottom-0 flex justify-center px-3 pb-10 pointer-events-none'
+                  : useDesktopCenter
+                    ? 'fixed inset-0 flex items-center justify-center px-3 pointer-events-none'
+                    : 'fixed inset-0 pointer-events-none'
             }
-            style={
-              useMobileSheet
+            style={{
+              zIndex: TOUR_Z.card,
+              ...(useMobileSheet
                 ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }
-                : undefined
-            }
+                : undefined),
+            }}
           >
             <motion.div
               key={`card-${step}`}
-              initial={{ opacity: 0, y: useMobileSheet ? 24 : 0, scale: useMobileSheet ? 1 : 0.94 }}
+              initial={{ opacity: 0, y: (useMobileSheet || useDesktopStageBottom) ? 24 : 0, scale: (useMobileSheet || useDesktopStageBottom) ? 1 : 0.94 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: useMobileSheet ? 16 : 0, scale: useMobileSheet ? 1 : 0.96 }}
+              exit={{ opacity: 0, y: (useMobileSheet || useDesktopStageBottom) ? 16 : 0, scale: (useMobileSheet || useDesktopStageBottom) ? 1 : 0.96 }}
               transition={{ type: 'spring', damping: 22, stiffness: 320 }}
               className="pointer-events-auto arcade-card p-4 sm:p-5 w-full max-w-sm max-h-[min(70vh,520px)] overflow-y-auto box-border"
               style={{
-                ...(useMobileSheet || useDesktopCenter ? {} : desktopStyle),
+                ...(useMobileSheet || useDesktopCenter || useDesktopStageBottom ? {} : desktopStyle),
+                background: '#111111',
                 borderColor: current.color,
                 borderWidth: '2px',
                 boxShadow: `0 0 30px ${current.color}33, 0 20px 60px rgba(0,0,0,0.9)`,
-                maxWidth: useMobileSheet ? 'min(100%, 24rem)' : undefined,
+                maxWidth: useMobileSheet || useDesktopStageBottom ? 'min(100%, 24rem)' : undefined,
+                ...(useDesktopAnchored && !useDesktopCenter ? { position: 'fixed' } : {}),
               }}
             >
             <div className="flex items-start justify-between gap-3 mb-3">
