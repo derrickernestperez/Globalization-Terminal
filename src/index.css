@@ -114,12 +114,14 @@ body::before {
 
 /* Compact label for narrow mobile columns (overrides .btn-arcade defaults) */
 .btn-arcade-micro {
-  font-size: 5px !important;
-  letter-spacing: 0.03em !important;
-  padding: 0.3rem 0.1rem !important;
+  font-size: clamp(4px, 1.35vw, 6px) !important;
+  letter-spacing: 0.02em !important;
+  padding: 0.28rem 0.05rem !important;
   border-width: 2px !important;
   line-height: 1 !important;
   white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
   box-shadow: 0 3px 0 #007B8B, 0 0 10px rgba(0,255,255,0.2) !important;
 }
 @media (min-width: 640px) {

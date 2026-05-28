@@ -187,7 +187,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
                 aria-label="How to play"
                 className="mt-2 w-full btn-arcade btn-cyan btn-arcade-micro"
               >
-                ◈ HOW TO PLAY
+                ◈ HOW{'\u00A0'}TO{'\u00A0'}PLAY
               </motion.button>
             ) : (
               <div className="mt-2 w-full py-1.5 shrink-0 invisible" aria-hidden="true" />
@@ -201,7 +201,7 @@ export default function LandingPage({ onStartSolo, onStartChallenger, onOpenLibr
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="arcade-card w-full max-w-md p-4 sm:p-6"
+        className="arcade-card w-full max-w-md p-4 sm:p-6 mt-2 sm:mt-0"
         style={{ borderColor: '#2A2A2A' }}
       >
         <AnimatePresence mode="wait">
