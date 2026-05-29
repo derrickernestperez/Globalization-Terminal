@@ -48,6 +48,15 @@ const DEVELOPERS = [
     color: '#BF5FFF',
     shadow: '0 0 18px rgba(191,95,255,0.45)',
   },
+  {
+    name: 'Delos Trinos, Cedric Vincent',
+    initials: 'CV',
+    age: 20,
+    role: 'Developer',
+    motto: '"Ship small, ship often, ship together."',
+    color: '#FF6B35',
+    shadow: '0 0 18px rgba(255,107,53,0.45)',
+  },
 ];
 
 function HexAvatar({ initials, color, shadow }) {

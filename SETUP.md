@@ -147,6 +147,7 @@ git push origin main
 | Ocubillo, Gypsy Brygxs | UI/UX Designer |
 | Perez, Derrick Ernest | Project Lead |
 | Relosa, John Carlo B. | Full Stack Developer |
+| Delos Trinos, Cedric Vincent | Developer |
 
 ---
 

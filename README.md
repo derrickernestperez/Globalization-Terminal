@@ -115,6 +115,7 @@ For Git setup and team workflow, see **[SETUP.md](./SETUP.md)**.
 | Ocubillo, Gypsy Brygxs | UI/UX Designer |
 | Perez, Derrick Ernest | Project Lead |
 | Relosa, John Carlo B. | Full Stack Developer |
+| Delos Trinos, Cedric Vincent | Developer |
 
 ---
 
