@@ -3,8 +3,8 @@ export const geoFlowPrompts = [
     id: 'cebu-circumnavigation',
     title: 'Global Maritime Beginnings',
     prompt:
-      'Place your marker where Magellan’s expedition made a historic landfall that symbolizes the closing of an early global maritime loop.',
-    location: 'Cebu, Philippines',
+      'Place your marker where Magellan’s expedition made a historic landfall that symbolizes the closing of an early global maritime loop.', // palitan ng mas  madaaling prompt
+    location: 'Cebu, Philippines', 
     country: 'Philippines',
     lat: 10.3157,
     lng: 123.8854,
