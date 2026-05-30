@@ -1,215 +1,265 @@
 export const geoFlowPrompts = [
   {
     id: 'cebu-circumnavigation',
-    title: 'Global Maritime Beginnings',
+    title: 'The First Global Loop',
     prompt:
-      'Place your marker where Magellan’s expedition made a historic landfall that symbolizes the closing of an early global maritime loop.',
+      'Drop your pin on the place where early explorers proved the world could be connected by one continuous journey.',
+    hint1: 'This happened during the age of explorers and ships.',
+    hint2: 'It is in Southeast Asia.',
+    hint3: 'This island became one of the earliest recorded contact points between European explorers and Southeast Asian communities.',
     location: 'Cebu, Philippines',
     country: 'Philippines',
     lat: 10.3157,
     lng: 123.8854,
     resourceId: 'introduction-to-globalization',
-    trivia:
-      'The course notes treat globalization as a long historical process. The first circumnavigation mattered because it showed that trade, conquest, and exchange could connect distant parts of the world in one continuous loop.',
+    feedbackCorrect:
+      'Nice! Early explorers showed that trade and travel could connect the entire world.',
+    feedbackWrong:
+      'Not quite. Think about early sea exploration and where Magellan landed.',
     recapPoint:
-      'Historical voyages remind us that globalization did not begin with smartphones. It has older roots in exploration, empire, trade, and religious expansion.',
+      'Globalization didn\'t start with the internet—it began with exploration, trade, and empire.',
+    trivia:
+      'The first circumnavigation showed that distant parts of the world could be connected in one continuous loop—a foundation for all global trade that followed.',
   },
   {
     id: 'seoul-cultural-flows',
-    title: 'Cultural and Media Flows',
+    title: 'Pop Culture Goes Global',
     prompt:
-      'Mark the city that stands in for today’s fast-moving cultural exports, where music, beauty, and television circulate across borders in real time.',
+      'Pin the city known for K-pop, K-dramas, and trends that spread worldwide in days.',
+    hint1: 'Think music, fashion, and viral content.',
+    hint2: 'This country is famous for BTS and high-speed internet.',
+    hint3: 'This city is a global tech hub with one of the fastest internet infrastructures in the world.',
     location: 'Seoul, South Korea',
     country: 'South Korea',
     lat: 37.5665,
     lng: 126.978,
     resourceId: 'introduction-to-globalization',
-    trivia:
-      'The introduction file describes globalization through flows and liquidity. Korean popular culture is a useful example because music, video, fashion, and fan communities move quickly across borders and are hard to contain once they spread online.',
+    feedbackCorrect:
+      'Correct! Culture now spreads globally almost instantly through the internet.',
+    feedbackWrong:
+      'Close! Think of where K-pop and Korean dramas come from.',
     recapPoint:
-      'Culture travels through highly porous networks. A song, show, or trend can now circulate internationally in hours rather than decades.',
+      'Culture moves fast in today\'s world—songs, shows, and trends cross borders instantly.',
+    trivia:
+      'Korean popular culture shows how media and trends can circulate internationally in hours rather than decades.',
   },
   {
     id: 'dhaka-garment-chain',
-    title: 'Garment Supply Chains',
+    title: 'Where Clothes Are Made',
     prompt:
-      'Choose the manufacturing center that represents how global apparel chains connect low-cost labor, export production, and consumer markets.',
+      'Choose the city where many global clothing brands produce their products at lower cost.',
+    hint1: 'Think about where cheap labor is common.',
+    hint2: 'This city is one of the world’s largest centers for textile and clothing production.',
+    hint3: 'A major clothing exporter in South Asia.',
     location: 'Dhaka, Bangladesh',
     country: 'Bangladesh',
     lat: 23.8103,
     lng: 90.4125,
     resourceId: 'global-economy',
-    trivia:
-      'The global economy notes emphasize supply chains, outsourcing, and the unequal pressures of incorporation into the world economy. Garment production in Bangladesh often illustrates how firms search for lower production costs while wealthy markets capture much of the value.',
+    feedbackCorrect:
+      'Yes! Many global brands produce goods in places with cheaper labor.',
+    feedbackWrong:
+      'Not quite. Think of countries known for garment factories.',
     recapPoint:
-      'Global supply chains are built through uneven power. Production can be outsourced to places with cheaper labor while branding and profits remain concentrated elsewhere.',
+      'Products are often made in lower-cost countries but sold globally for higher prices.',
+    trivia:
+      'Global supply chains are built through uneven power—production is outsourced to cheaper locations while branding and profits stay elsewhere.',
   },
   {
     id: 'rotterdam-market-integration',
-    title: 'Integrated Trade Gateways',
+    title: 'Gateway of Trade',
     prompt:
-      'Pin the European port city that symbolizes how integrated markets depend on infrastructure, trade corridors, and shared commercial rules.',
+      'Mark the major European port where goods from all over the world pass through.',
+    hint1: 'Think of ships, containers, and trade routes.',
+    hint2: 'One of the busiest ports in Europe.',
+    hint3: 'This port connects inland Europe to global shipping routes through a massive river delta.',
     location: 'Rotterdam, Netherlands',
     country: 'Netherlands',
     lat: 51.9244,
     lng: 4.4777,
     resourceId: 'market-integration',
-    trivia:
-      'The market integration slides explain that national economies become more closely linked when barriers fall and trade, labor, and capital move more freely. Major logistics hubs show what that integration looks like in practice.',
+    feedbackCorrect:
+      'Correct! Global trade depends on ports and infrastructure like this.',
+    feedbackWrong:
+      'Close! Think of a major European shipping hub.',
     recapPoint:
-      'Market integration is not abstract. It depends on ports, shipping routes, customs systems, and agreements that let goods move at scale.',
+      'Global trade works because of real systems like ports, ships, and logistics networks.',
+    trivia:
+      'Market integration is not abstract—it depends on ports, shipping routes, customs systems, and agreements that let goods move at scale.',
   },
   {
     id: 'new-york-finance',
-    title: 'Financial Liquidity',
+    title: 'Money Moves Fast',
     prompt:
-      'Select the financial center that best represents how capital can move, react, and reshape economies almost instantly.',
+      'Pin the city where financial decisions can affect the whole world in seconds.',
+    hint1: 'Think of stock markets and global finance.',
+    hint2: 'Wall Street is located here.',
+    hint3: 'This city hosts one of the most influential stock exchanges in the world.',
     location: 'New York City, United States',
     country: 'United States',
     lat: 40.7128,
     lng: -74.006,
     resourceId: 'global-economy',
-    trivia:
-      'The course material links globalization to liquidity: a world in which finance and information move rapidly through space and time. Global financial hubs matter because decisions made there can affect jobs, prices, and debt far beyond national borders.',
+    feedbackCorrect:
+      'Exactly! Money moves globally at incredible speed from financial centers.',
+    feedbackWrong:
+      'Not quite. Think of Wall Street and global finance.',
     recapPoint:
-      'The speed of global finance is one reason economic globalization feels unstable. Events in one major market can cascade across many others.',
+      'Financial decisions in one place can impact economies worldwide almost instantly.',
+    trivia:
+      'The speed of global finance is one reason economic globalization feels unstable—events in one market can cascade across many others.',
   },
   {
     id: 'geneva-global-governance',
-    title: 'Institutions Beyond One State',
+    title: 'Solving Global Problems',
     prompt:
-      'Place your marker on the city that stands for transnational problem-solving through institutions, diplomacy, and shared rules.',
+      'Choose the city known for international organizations that help solve global issues.',
+    hint1: 'Think of diplomacy and global cooperation.',
+    hint2: 'Many UN offices are located here.',
+    hint3: 'A neutral country in Europe.',
     location: 'Geneva, Switzerland',
     country: 'Switzerland',
     lat: 46.2044,
     lng: 6.1432,
     resourceId: 'global-governance',
-    trivia:
-      'The global governance file explains that the world does not have a single world government, but it does have laws, norms, institutions, and cooperative arrangements that mediate cross-border problems. Geneva symbolizes that institutional layer of globalization.',
+    feedbackCorrect:
+      'Yes! Global problems often need international cooperation to solve.',
+    feedbackWrong:
+      'Close! Think of a city known for global organizations like the UN.',
     recapPoint:
-      'Globalization is not only movement. It also creates pressure for institutions that coordinate health, law, trade, and diplomacy across states.',
+      'Globalization requires cooperation through institutions, not just movement.',
+    trivia:
+      'The world doesn\'t have one government—but cities like Geneva host institutions that coordinate health, law, trade, and diplomacy across borders.',
   },
 ];
 
 export const flagCountryPool = [
-  { name: 'United States', code: 'us', category: 'CORE' },
-  { name: 'Germany', code: 'de', category: 'CORE' },
-  { name: 'Japan', code: 'jp', category: 'CORE' },
-  { name: 'United Kingdom', code: 'gb', category: 'CORE' },
-  { name: 'France', code: 'fr', category: 'CORE' },
-  { name: 'Canada', code: 'ca', category: 'CORE' },
-  { name: 'South Korea', code: 'kr', category: 'CORE' },
-  { name: 'Australia', code: 'au', category: 'CORE' },
-  { name: 'China', code: 'cn', category: 'SEMI_PERIPHERY' },
-  { name: 'India', code: 'in', category: 'SEMI_PERIPHERY' },
-  { name: 'Brazil', code: 'br', category: 'SEMI_PERIPHERY' },
-  { name: 'Mexico', code: 'mx', category: 'SEMI_PERIPHERY' },
-  { name: 'Turkey', code: 'tr', category: 'SEMI_PERIPHERY' },
-  { name: 'South Africa', code: 'za', category: 'SEMI_PERIPHERY' },
-  { name: 'Thailand', code: 'th', category: 'SEMI_PERIPHERY' },
-  { name: 'Malaysia', code: 'my', category: 'SEMI_PERIPHERY' },
-  { name: 'Bangladesh', code: 'bd', category: 'PERIPHERY' },
-  { name: 'Democratic Republic of the Congo', code: 'cd', category: 'PERIPHERY' },
-  { name: 'Ethiopia', code: 'et', category: 'PERIPHERY' },
-  { name: 'Cambodia', code: 'kh', category: 'PERIPHERY' },
-  { name: 'Nepal', code: 'np', category: 'PERIPHERY' },
-  { name: 'Haiti', code: 'ht', category: 'PERIPHERY' },
-  { name: 'Madagascar', code: 'mg', category: 'PERIPHERY' },
-  { name: 'Myanmar', code: 'mm', category: 'PERIPHERY' },
+  { name: 'United States', code: 'us', category: 'CORE', clue: 'Tech giants, Hollywood, Wall Street—the engine of global culture and finance' },
+  { name: 'Germany', code: 'de', category: 'CORE', clue: 'Europe\'s industrial powerhouse—cars, machinery, and precision engineering exports' },
+  { name: 'Japan', code: 'jp', category: 'CORE', clue: 'Electronics, robotics, anime—exports high-tech goods and pop culture worldwide' },
+  { name: 'United Kingdom', code: 'gb', category: 'CORE', clue: 'Global finance hub, media empire, and a former colonial power with lasting influence' },
+  { name: 'France', code: 'fr', category: 'CORE', clue: 'Fashion, luxury brands, nuclear energy—a cultural and economic power' },
+  { name: 'Canada', code: 'ca', category: 'CORE', clue: 'Natural resources, tech sector, and deep trade ties with the USA' },
+  { name: 'South Korea', code: 'kr', category: 'CORE', clue: 'K-pop, Samsung, Hyundai—culture and high-tech exports on the world stage' },
+  { name: 'Australia', code: 'au', category: 'CORE', clue: 'Mining, agriculture, high living standards—dominant in the Asia-Pacific' },
+  { name: 'China', code: 'cn', category: 'SEMI_PERIPHERY', clue: 'World\'s factory and fast-rising tech power—makes almost everything' },
+  { name: 'India', code: 'in', category: 'SEMI_PERIPHERY', clue: 'Software outsourcing capital, massive workforce, Bollywood' },
+  { name: 'Brazil', code: 'br', category: 'SEMI_PERIPHERY', clue: 'Coffee, soybeans, beef—feeds the world with a growing domestic market' },
+  { name: 'Mexico', code: 'mx', category: 'SEMI_PERIPHERY', clue: 'Assembly factories for US brands, oil exports, and major tourism' },
+  { name: 'Turkey', code: 'tr', category: 'SEMI_PERIPHERY', clue: 'Bridge between Europe and Asia—textiles, tourism, and regional power' },
+  { name: 'South Africa', code: 'za', category: 'SEMI_PERIPHERY', clue: 'Africa\'s largest economy—gold, diamonds, and a major regional trade hub' },
+  { name: 'Thailand', code: 'th', category: 'SEMI_PERIPHERY', clue: 'Electronics assembly, rice exports, and a major tourism destination' },
+  { name: 'Malaysia', code: 'my', category: 'SEMI_PERIPHERY', clue: 'Palm oil, electronics, and a growing middle-income economy' },
+  { name: 'Bangladesh', code: 'bd', category: 'PERIPHERY', clue: 'Makes much of the world\'s clothing—massive garment industry, low wages' },
+  { name: 'Democratic Republic of the Congo', code: 'cd', category: 'PERIPHERY', clue: 'Rich in cobalt and minerals that power your devices—but little wealth stays here' },
+  { name: 'Ethiopia', code: 'et', category: 'PERIPHERY', clue: 'Coffee\'s birthplace, fast-growing population, dependent on aid and commodity exports' },
+  { name: 'Cambodia', code: 'kh', category: 'PERIPHERY', clue: 'Clothing factories, tourism revenue, still recovering from historical conflict' },
+  { name: 'Nepal', code: 'np', category: 'PERIPHERY', clue: 'Workers abroad send money home (remittances)—the main economic lifeline' },
+  { name: 'Haiti', code: 'ht', category: 'PERIPHERY', clue: 'Poorest nation in the Western Hemisphere, heavily dependent on foreign aid' },
+  { name: 'Madagascar', code: 'mg', category: 'PERIPHERY', clue: 'World\'s top vanilla exporter—unique wildlife, but very high poverty' },
+  { name: 'Myanmar', code: 'mm', category: 'PERIPHERY', clue: 'Garment factories, jade mines, ongoing political instability' },
 ];
 
 export const feudQuestionPool = [
   {
     id: 'everyday-globalization',
-    question: 'When people mention globalization, what everyday example comes to mind first?',
+    question: 'What\'s the first thing people think of when they hear "globalization"?',
+    insight: 'Globalization is everywhere—we mostly notice it through screens and shopping.',
     answers: [
       { label: 'Internet and social media', points: 40, match: ['internet', 'social media', 'social', 'online'] },
-      { label: 'International brands', points: 30, match: ['brands', 'global brands', 'brand'] },
+      { label: 'Global brands (Nike, Apple, etc.)', points: 30, match: ['brands', 'global brands', 'brand', 'nike', 'apple'] },
       { label: 'Travel and flights', points: 20, match: ['travel', 'flights', 'plane', 'tourism'] },
-      { label: 'Online shopping', points: 10, match: ['online shopping', 'shopping', 'ecommerce', 'e-commerce'] },
+      { label: 'Online shopping (Shopee, Amazon)', points: 10, match: ['online shopping', 'shopping', 'ecommerce', 'e-commerce', 'shopee', 'amazon'] },
     ],
   },
   {
     id: 'supply-chain-signals',
-    question: 'What clue makes people realize a product came through a global supply chain?',
+    question: 'What makes you realize something came from another country?',
+    insight: 'Almost every product you own has parts or origins from multiple countries.',
     answers: [
-      { label: 'Made in another country', points: 35, match: ['made in', 'another country', 'foreign label', 'imported'] },
-      { label: 'Parts from different places', points: 25, match: ['parts', 'different places', 'components', 'assembled'] },
-      { label: 'A familiar multinational brand', points: 25, match: ['multinational', 'global brand', 'familiar brand', 'brand'] },
-      { label: 'It was shipped overseas', points: 15, match: ['shipped', 'overseas', 'cargo', 'shipping'] },
+      { label: '"Made in another country" label', points: 35, match: ['made in', 'another country', 'foreign label', 'imported'] },
+      { label: 'Different parts from different places', points: 25, match: ['parts', 'different places', 'components', 'assembled'] },
+      { label: 'Famous international brand', points: 25, match: ['multinational', 'global brand', 'familiar brand', 'brand'] },
+      { label: 'It was shipped from overseas', points: 15, match: ['shipped', 'overseas', 'cargo', 'shipping'] },
     ],
   },
   {
     id: 'global-institutions',
-    question: 'Which institution do people usually name when they talk about solving world problems?',
+    question: 'Who do people think helps solve global problems?',
+    insight: 'No single country can fix climate change or pandemics alone—that\'s why global institutions exist.',
     answers: [
-      { label: 'United Nations', points: 40, match: ['united nations', 'un', 'u.n.'] },
-      { label: 'World Health Organization', points: 20, match: ['world health organization', 'who'] },
+      { label: 'United Nations (UN)', points: 40, match: ['united nations', 'un', 'u.n.'] },
+      { label: 'World Health Organization (WHO)', points: 20, match: ['world health organization', 'who'] },
       { label: 'World Bank', points: 20, match: ['world bank'] },
-      { label: 'International Monetary Fund', points: 20, match: ['imf', 'international monetary fund'] },
+      { label: 'International Monetary Fund (IMF)', points: 20, match: ['imf', 'international monetary fund'] },
     ],
   },
   {
     id: 'foods-that-travel',
-    question: 'Which foods instantly remind people that culture travels across borders?',
+    question: 'Which food screams "globalization"?',
+    insight: 'Food crossing borders is one of the oldest and tastiest forms of cultural exchange.',
     answers: [
       { label: 'Burgers and fries', points: 35, match: ['burger', 'burgers', 'fries', 'burger and fries'] },
       { label: 'Pizza', points: 25, match: ['pizza'] },
-      { label: 'Sushi or ramen', points: 25, match: ['sushi', 'ramen'] },
-      { label: 'Korean barbecue', points: 15, match: ['korean barbecue', 'samgyupsal', 'samgyeopsal', 'korean bbq'] },
+      { label: 'Sushi / ramen', points: 25, match: ['sushi', 'ramen'] },
+      { label: 'Samgyupsal / Korean BBQ', points: 15, match: ['korean barbecue', 'samgyupsal', 'samgyeopsal', 'korean bbq'] },
     ],
   },
   {
     id: 'outsourcing-reasons',
-    question: 'Why do companies move part of their work to another country?',
+    question: 'Why do companies move jobs to other countries?',
+    insight: 'Cheaper labor abroad means lower prices for consumers—but fewer local jobs.',
     answers: [
-      { label: 'Lower labor costs', points: 40, match: ['lower labor costs', 'cheap labor', 'lower wages', 'cost'] },
+      { label: 'Cheaper labor', points: 40, match: ['lower labor costs', 'cheap labor', 'lower wages', 'cost', 'cheaper'] },
       { label: 'Faster production', points: 20, match: ['faster production', 'faster', 'speed', 'quick'] },
-      { label: 'Specialized skills', points: 20, match: ['specialized skills', 'skills', 'talent', 'expertise'] },
-      { label: 'Round-the-clock operations', points: 20, match: ['24/7', 'round the clock', 'different time zones', 'time zones'] },
+      { label: 'Skilled workers', points: 20, match: ['specialized skills', 'skills', 'talent', 'expertise'] },
+      { label: 'Different time zones (24/7 work)', points: 20, match: ['24/7', 'round the clock', 'different time zones', 'time zones', 'time'] },
     ],
   },
   {
     id: 'what-moves-fast',
-    question: 'What tends to move fastest in a globalized world?',
+    question: 'What spreads the fastest in today\'s world?',
+    insight: 'Information travels at light speed—but people and goods still get stuck at borders.',
     answers: [
-      { label: 'Information', points: 35, match: ['information', 'news', 'data'] },
+      { label: 'Information (news, posts)', points: 35, match: ['information', 'news', 'data'] },
       { label: 'Money and capital', points: 30, match: ['money', 'capital', 'finance'] },
-      { label: 'Culture and media', points: 20, match: ['culture', 'media', 'music', 'shows'] },
-      { label: 'People for work or study', points: 15, match: ['people', 'migration', 'workers', 'students'] },
+      { label: 'Culture (music, trends)', points: 20, match: ['culture', 'media', 'music', 'shows', 'trends'] },
+      { label: 'People (migration)', points: 15, match: ['people', 'migration', 'workers', 'students'] },
     ],
   },
   {
     id: 'competition-for-growth',
     question: 'What do countries compete for in the global economy?',
+    insight: 'Countries compete for a bigger slice of the global economy—just like businesses do.',
     answers: [
       { label: 'Foreign investment', points: 35, match: ['investment', 'foreign investment', 'investors'] },
-      { label: 'Export markets', points: 25, match: ['export markets', 'exports', 'trade partners', 'trade'] },
-      { label: 'Tourists', points: 20, match: ['tourists', 'tourism'] },
+      { label: 'Export markets', points: 25, match: ['export markets', 'exports', 'trade partners', 'trade','export'] },
+      { label: 'Tourists', points: 20, match: ['tourists', 'tourism', 'tourist'] },
       { label: 'Technology and innovation', points: 20, match: ['technology', 'innovation', 'tech'] },
     ],
   },
   {
     id: 'globalization-concerns',
-    question: 'What concern do people often connect to globalization?',
+    question: 'What\'s the biggest downside people connect to globalization?',
+    insight: 'Globalization creates winners and losers—the gap between them is the main debate.',
     answers: [
-      { label: 'Inequality', points: 35, match: ['inequality', 'gap', 'poverty gap'] },
-      { label: 'Job loss from outsourcing', points: 25, match: ['job loss', 'outsourcing', 'jobs leaving'] },
-      { label: 'Cultural sameness', points: 20, match: ['cultural sameness', 'homogeneity', 'same culture', 'westernization'] },
-      { label: 'Environmental strain', points: 20, match: ['environment', 'pollution', 'climate', 'environmental strain'] },
+      { label: 'Inequality (rich vs. poor)', points: 35, match: ['inequality', 'gap', 'poverty gap', 'rich', 'poor'] },
+      { label: 'Job loss from outsourcing', points: 25, match: ['job loss', 'outsourcing', 'jobs leaving', 'jobs'] },
+      { label: 'Cultural sameness (everything looks the same)', points: 20, match: ['cultural sameness', 'homogeneity', 'same culture', 'westernization', 'same'] },
+      { label: 'Environmental damage', points: 20, match: ['environment', 'pollution', 'climate', 'environmental strain', 'damage'] },
     ],
   },
 ];
 
 export const stageRecaps = {
   stage1: {
-    title: 'Information Recap · Global Flows',
+    title: 'Intel Briefing · Global Flows',
     summary:
-      'Stage 1 connected places to ideas from the course: early voyages, cultural circulation, supply chains, finance, and governance all show different kinds of global flow.',
+      'You just pinned the places where globalization happens. Trade, culture, money, and cooperation all flow through real locations.',
     bullets: [
-      'Globalization has deep historical roots, not just recent digital ones.',
-      'Flows can be cultural, financial, institutional, or material.',
-      'Distance still matters, but technology and infrastructure make movement faster and denser.',
+      'Globalization started with ships and explorers, not Wi-Fi.',
+      'Culture, money, and goods each move differently—some instantly, some slowly.',
+      'Infrastructure (ports, cities, institutions) is what makes global flow possible.',
     ],
     resourceIds: [
       'introduction-to-globalization',
@@ -219,24 +269,24 @@ export const stageRecaps = {
     ],
   },
   stage2: {
-    title: 'Information Recap · World Systems',
+    title: 'Intel Briefing · World-Systems',
     summary:
-      'Stage 2 used World-Systems Theory as a way to think about unequal positions inside the global economy. These categories are analytical tools, not moral labels.',
+      'CORE = rich countries that run global business. SEMI = growing economies in the middle. PERIPHERY = countries that mostly supply labor and raw materials.',
     bullets: [
-      'Core zones tend to control finance, technology, and higher-value production.',
-      'Semi-periphery countries often bridge extraction, manufacturing, and rising domestic markets.',
-      'Periphery zones are often pressured into supplying labor, raw materials, or low-value work.',
+      'CORE countries control finance, tech, and high-value production.',
+      'SEMI-PERIPHERY nations are growing and bridge extraction with manufacturing.',
+      'PERIPHERY zones supply labor and resources but capture little of the profit.',
     ],
     resourceIds: ['introduction-to-globalization', 'global-economy'],
   },
   stage3: {
-    title: 'Information Recap · Everyday Globalization',
+    title: 'Intel Briefing · Everyday Globalization',
     summary:
-      'Stage 3 focused on what globalization feels like in ordinary life: brands, media, migration, outsourcing, institutions, and inequality.',
+      'Globalization isn\'t just a textbook idea—it\'s in your phone, your food, your social media feed.',
     bullets: [
-      'The global economy shows up through consumption, outsourcing, and rapid circulation of information.',
-      'Global governance matters because many cross-border problems cannot be handled by one state alone.',
-      'Public debates about globalization often revolve around opportunity and inequality at the same time.',
+      'Brands, media, and apps are how most people experience globalization daily.',
+      'Global institutions exist because problems like pandemics cross every border.',
+      'The big debate: who benefits, and who gets left behind?',
     ],
     resourceIds: [
       'introduction-to-globalization',
