@@ -200,6 +200,47 @@ export default function useSound() {
     [playSequence],
   );
 
+  /* ─── SFX: Feud countdown tick (last 30s) ─── */
+  const playTimerTick = useCallback(
+    (urgency = 'green') => {
+      const steps =
+        urgency === 'red'
+          ? [
+              { frequency: noteToFreq(84), duration: 0.05, volume: 0.055, type: 'square', delay: 0 },
+              { frequency: noteToFreq(80), duration: 0.05, volume: 0.05, type: 'square', delay: 0.04 },
+            ]
+          : urgency === 'yellow'
+            ? [{ frequency: noteToFreq(88), duration: 0.05, volume: 0.042, type: 'square' }]
+            : [{ frequency: noteToFreq(91), duration: 0.04, volume: 0.032, type: 'sine' }];
+      playSequence(steps);
+    },
+    [playSequence],
+  );
+
+  /* ─── SFX: Feud urgency phase (30s / 15s / final stretch) ─── */
+  const playTimerPhase = useCallback(
+    (urgency = 'green') => {
+      const steps =
+        urgency === 'red'
+          ? [
+              { frequency: noteToFreq(76), duration: 0.1, volume: 0.065, type: 'sawtooth', delay: 0 },
+              { frequency: noteToFreq(72), duration: 0.1, volume: 0.065, type: 'sawtooth', delay: 0.09 },
+              { frequency: noteToFreq(67), duration: 0.14, volume: 0.07, type: 'sawtooth', delay: 0.18 },
+            ]
+          : urgency === 'yellow'
+            ? [
+                { frequency: noteToFreq(79), duration: 0.1, volume: 0.055, type: 'square', delay: 0 },
+                { frequency: noteToFreq(84), duration: 0.12, volume: 0.06, type: 'square', delay: 0.1 },
+              ]
+            : [
+                { frequency: noteToFreq(84), duration: 0.1, volume: 0.05, type: 'triangle', delay: 0 },
+                { frequency: noteToFreq(88), duration: 0.12, volume: 0.055, type: 'triangle', delay: 0.1 },
+              ];
+      playSequence(steps);
+    },
+    [playSequence],
+  );
+
   /* ─── SFX: Lose ─── */
   const playLose = useCallback(
     () =>
@@ -318,6 +359,8 @@ export default function useSound() {
     playWarning,
     playWin,
     playLose,
+    playTimerTick,
+    playTimerPhase,
     startBgMusic,
     stopBgMusic,
   };

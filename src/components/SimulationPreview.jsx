@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
 import {
@@ -750,41 +751,32 @@ function FeudSlot({ answer, isRevealed, index, rank }) {
   );
 }
 
-/* ── Feud final countdown modal (≤30s) ── */
+/* ── Feud final countdown bar (≤30s) — fixed top, does not block input ── */
 function FeudUrgencyModal({ seconds }) {
   const level = feudUrgencyLevel(seconds);
-  if (!level) return null;
+  if (!level || typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <motion.div
-      className="feud-urgency-overlay"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      aria-live="assertive"
-      role="alert"
+      className="feud-urgency-topbar"
+      initial={{ opacity: 0, y: -28 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -28 }}
+      aria-live="polite"
+      role="status"
     >
-      <motion.div
-        className={`feud-urgency-modal feud-urgency-modal--${level}`}
-        initial={{ scale: 0.85, y: 12 }}
-        animate={{
-          scale: level === 'red' ? [1, 1.06, 1] : 1,
-          y: 0,
-        }}
-        transition={{
-          scale: level === 'red' ? { repeat: Infinity, duration: 0.55 } : { duration: 0.25 },
-        }}
-      >
+      <div className={`feud-urgency-modal feud-urgency-modal--${level}`}>
         <p className="feud-urgency-kicker">SURVEY SAYS · CLOCK IS RUNNING</p>
         <p className="feud-urgency-headline">{feudUrgencyHeadline(seconds)}</p>
         <p className="feud-urgency-time">{formatFeudClock(seconds)}</p>
         <p className="feud-urgency-sub">
-          {level === 'green' && 'Stay sharp — top answers still on the board'}
+          {level === 'green' && 'Stay sharp — keep answering below'}
           {level === 'yellow' && 'Pick fast — every second counts'}
           {level === 'red' && 'Type now — time is almost up!'}
         </p>
-      </motion.div>
-    </motion.div>
+      </div>
+    </motion.div>,
+    document.body,
   );
 }
 
@@ -933,7 +925,17 @@ export default function SimulationPreview({
     [seed],
   );
 
-  const { playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning, playHintReveal } = useSound();
+  const {
+    playUiClick,
+    playPinDrop,
+    playSubmit,
+    playNavigate,
+    playSuccess,
+    playWarning,
+    playHintReveal,
+    playTimerTick,
+    playTimerPhase,
+  } = useSound();
 
   const sfx = useMemo(
     () => ({
@@ -944,8 +946,10 @@ export default function SimulationPreview({
       good:     () => { if (!isMuted) playSuccess(); },
       bad:      () => { if (!isMuted) playWarning(); },
       hint:     () => { if (!isMuted) playHintReveal(); },
+      timerTick: (level) => { if (!isMuted) playTimerTick(level); },
+      timerPhase: (level) => { if (!isMuted) playTimerPhase(level); },
     }),
-    [isMuted, playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning, playHintReveal],
+    [isMuted, playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning, playHintReveal, playTimerTick, playTimerPhase],
   );
 
   /* ── Running score refs (avoid stale closure) ── */
@@ -989,6 +993,8 @@ export default function SimulationPreview({
   const [feudFinishConfirm, setFeudFinishConfirm] = useState(false);
   const [feudLastSurveyTagline, setFeudLastSurveyTagline] = useState(null);
   const [feudLastInsight, setFeudLastInsight] = useState(null);
+  const feudTimerTickRef = useRef(null);
+  const feudUrgencyLevelRef = useRef(null);
 
   const cumulative = displayS1 + displayS2 + displayS3;
   const challengerTotal = challengerData?.total ?? null;
@@ -1012,6 +1018,28 @@ export default function SimulationPreview({
     const id = setInterval(() => setFeudTimer((t) => t - 1), 1000);
     return () => clearInterval(id);
   }, [gameStage, feudTimer, feudActive]);
+
+  /* ───── Stage 3 urgency ticks + phase sounds (last 30s) ───── */
+  useEffect(() => {
+    if (gameStage !== 'stage3' || !feudActive || feudTimer <= 0) {
+      feudTimerTickRef.current = null;
+      feudUrgencyLevelRef.current = null;
+      return;
+    }
+    if (feudTimer > FEUD_URGENCY_START_SEC) return;
+
+    const level = feudUrgencyLevel(feudTimer);
+    if (!level) return;
+
+    if (feudUrgencyLevelRef.current !== level) {
+      sfx.timerPhase(level);
+      feudUrgencyLevelRef.current = level;
+    }
+    if (feudTimerTickRef.current !== feudTimer) {
+      sfx.timerTick(level);
+      feudTimerTickRef.current = feudTimer;
+    }
+  }, [gameStage, feudActive, feudTimer, sfx]);
 
   /* ───── Stage 1 handlers ───── */
   function revealGeoHint() {
@@ -1212,8 +1240,11 @@ export default function SimulationPreview({
     gameStage === 'stage3' && feudActive ? feudUrgencyLevel(feudTimer) : null;
 
   /* ═══════════════ RENDER ═══════════════ */
+  const showFeudUrgencyModal =
+    gameStage === 'stage3' && feudActive && feudTimer > 0 && feudTimer <= FEUD_URGENCY_START_SEC;
+
   return (
-    <div className="min-h-screen pb-20">
+    <div className={`min-h-screen pb-20 ${showFeudUrgencyModal ? 'feud-urgency-page-pad' : ''}`}>
       <GameHUD
         stageLabel={hudLabel}
         cumulative={cumulative}
@@ -1222,6 +1253,12 @@ export default function SimulationPreview({
         challengerTotal={challengerTotal}
         feudUrgency={hudFeudUrgency}
       />
+
+      <AnimatePresence>
+        {showFeudUrgencyModal && (
+          <FeudUrgencyModal key="feud-urgency" seconds={feudTimer} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {/* ══════ STAGE 1 ══════ */}
@@ -1618,6 +1655,7 @@ export default function SimulationPreview({
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions · hidden slots · 2-minute clock</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → SURVEY SAYS tagline + points</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>PASS skips ahead · skipped Qs come back later</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>At 0:30 — big countdown popup (green → yellow → red)</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Timer hits zero → round ends automatically</li>
                 </ul>
                 <motion.button
@@ -1633,12 +1671,6 @@ export default function SimulationPreview({
             ) : (
               /* Active feud */
               <>
-                <AnimatePresence>
-                  {feudTimer <= FEUD_URGENCY_START_SEC && (
-                    <FeudUrgencyModal key="feud-urgency" seconds={feudTimer} />
-                  )}
-                </AnimatePresence>
-
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-mono-arcade text-[9px] text-[#555] tracking-widest">
                     Q {feudQIdx + 1} / {feudDeck.length}
