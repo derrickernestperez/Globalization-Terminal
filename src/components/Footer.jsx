@@ -28,7 +28,7 @@ const DEVELOPERS = [
     shadow: '0 0 18px rgba(255,0,128,0.45)',
   },
   {
-    name: 'Ocubillo, Gypsy Brygxs',
+    name: 'Landerito, Gypsy Brygxs',
     nickname: 'Gypsy',
     age: 23,
     globalizationForMeIs: 'When songs, shows, and styles from other countries become normal in daily life.',
