@@ -3,11 +3,11 @@ export const geoFlowPrompts = [
     id: 'cebu-circumnavigation',
     title: 'First Trip Around the World',
     prompt:
-      'Magellan\'s crew landed here during the first voyage to sail all the way around the planet. Drop your pin on that country.',
-    location: 'Cebu, Philippines',
+      'Magellan\'s crew finished the first voyage around the world after landing in this country. Drop your pin on the country.',
+    location: 'Philippines',
     country: 'Philippines',
-    lat: 10.3157,
-    lng: 123.8854,
+    lat: 12.88,
+    lng: 121.77,
     resourceId: 'introduction-to-globalization',
     hints: [
       { text: 'Think Southeast Asia — a nation made of thousands of islands.', penalty: 10 },
@@ -23,11 +23,11 @@ export const geoFlowPrompts = [
     id: 'seoul-cultural-flows',
     title: 'K-Pop & Global Culture',
     prompt:
-      'K-pop, K-dramas, and Korean beauty trends spread from this capital city to phones everywhere. Where is it?',
-    location: 'Seoul, South Korea',
+      'K-pop, K-dramas, and Korean beauty trends spread from this country to phones everywhere. Mark the country.',
+    location: 'South Korea',
     country: 'South Korea',
-    lat: 37.5665,
-    lng: 126.978,
+    lat: 35.91,
+    lng: 127.77,
     resourceId: 'introduction-to-globalization',
     hints: [
       { text: 'A peninsula nation between China and Japan.', penalty: 10 },
@@ -44,10 +44,10 @@ export const geoFlowPrompts = [
     title: 'Where Your Clothes Get Made',
     prompt:
       'Many fast-fashion shirts and jeans are stitched in factories here before shipping to malls worldwide. Mark this country.',
-    location: 'Dhaka, Bangladesh',
+    location: 'Bangladesh',
     country: 'Bangladesh',
-    lat: 23.8103,
-    lng: 90.4125,
+    lat: 23.68,
+    lng: 90.36,
     resourceId: 'global-economy',
     hints: [
       { text: 'A crowded South Asian country next to India.', penalty: 10 },
@@ -63,11 +63,11 @@ export const geoFlowPrompts = [
     id: 'rotterdam-market-integration',
     title: 'Europe\'s Mega Port',
     prompt:
-      'One of Europe\'s busiest ports moves containers from every continent. Pin the country where Rotterdam sits.',
-    location: 'Rotterdam, Netherlands',
+      'One of Europe\'s busiest container ports sits in this country. Pin the country.',
+    location: 'Netherlands',
     country: 'Netherlands',
-    lat: 51.9244,
-    lng: 4.4777,
+    lat: 52.13,
+    lng: 5.29,
     resourceId: 'market-integration',
     hints: [
       { text: 'Flat, windy, famous for tulips and bicycles.', penalty: 10 },
@@ -84,10 +84,10 @@ export const geoFlowPrompts = [
     title: 'Wall Street & World Money',
     prompt:
       'Stock markets here can move prices and jobs across the globe in seconds. Which country is home to this financial hub?',
-    location: 'New York City, United States',
+    location: 'United States',
     country: 'United States',
-    lat: 40.7128,
-    lng: -74.006,
+    lat: 37.09,
+    lng: -95.71,
     resourceId: 'global-economy',
     hints: [
       { text: 'A huge country between Canada and Mexico.', penalty: 10 },
@@ -104,10 +104,10 @@ export const geoFlowPrompts = [
     title: 'Where Nations Talk It Out',
     prompt:
       'Diplomats and UN agencies meet here to solve problems no single country can fix alone. Mark this country.',
-    location: 'Geneva, Switzerland',
+    location: 'Switzerland',
     country: 'Switzerland',
-    lat: 46.2044,
-    lng: 6.1432,
+    lat: 46.82,
+    lng: 8.23,
     resourceId: 'global-governance',
     hints: [
       { text: 'Landlocked in the Alps — famous for chocolate and watches.', penalty: 10 },

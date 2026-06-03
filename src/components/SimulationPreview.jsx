@@ -140,6 +140,42 @@ function nearestCountry(lat, lng) {
   return best.n;
 }
 
+function countryCentroid(countryName) {
+  const key = countryName?.trim().toLowerCase();
+  const hit = COUNTRY_HINTS.find((c) => c.n.trim().toLowerCase() === key);
+  return hit ? { lat: hit.lat, lng: hit.lng } : null;
+}
+
+/** Sample points along the great-circle arc between two coordinates. */
+function greatCirclePath(lat1, lng1, lat2, lng2, segments = 56) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const toDeg = (r) => (r * 180) / Math.PI;
+  const φ1 = toRad(lat1);
+  const λ1 = toRad(lng1);
+  const φ2 = toRad(lat2);
+  const λ2 = toRad(lng2);
+  const Δ =
+    2 *
+    Math.asin(
+      Math.sqrt(
+        Math.sin((φ2 - φ1) / 2) ** 2 +
+          Math.cos(φ1) * Math.cos(φ2) * Math.sin((λ2 - λ1) / 2) ** 2,
+      ),
+    );
+  if (Δ < 1e-8) return [[lat1, lng1], [lat2, lng2]];
+  const out = [];
+  for (let i = 0; i <= segments; i += 1) {
+    const f = i / segments;
+    const a = Math.sin((1 - f) * Δ) / Math.sin(Δ);
+    const b = Math.sin(f * Δ) / Math.sin(Δ);
+    const x = a * Math.cos(φ1) * Math.cos(λ1) + b * Math.cos(φ2) * Math.cos(λ2);
+    const y = a * Math.cos(φ1) * Math.sin(λ1) + b * Math.cos(φ2) * Math.sin(λ2);
+    const z = a * Math.sin(φ1) + b * Math.sin(φ2);
+    out.push([toDeg(Math.atan2(z, Math.sqrt(x * x + y * y))), toDeg(Math.atan2(y, x))]);
+  }
+  return out;
+}
+
 /* Decode world-atlas topojson → array of [lng,lat][] polygon rings */
 function decodeTopojson(topo) {
   const sc = topo.transform?.scale ?? [1, 1];
@@ -177,7 +213,7 @@ function globeRadiusPct(canvasWidth, zoom) {
   return ((W / 2 - 2) / W) * 100 * zoom;
 }
 
-function GlobeBoard({ onPin, pinned, revealTarget }) {
+function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
   const [rotY, setRotY] = useState(0);
   const [rotX, setRotX] = useState(-8);
   const [zoom, setZoom] = useState(1);
@@ -188,7 +224,8 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const ringsRef = useRef(null); // decoded topojson rings
-  const answerLocked = !!revealTarget;
+  const resultMode = !!resultLine;
+  const framedRef = useRef(false);
 
   /* Fetch world atlas topojson once */
   useEffect(() => {
@@ -241,17 +278,25 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
     }
 
     drawRings(ctx, rings, rotY, rotX, zoom, W, H);
-  }, [rotY, rotX, zoom]);
+    if (resultLine) {
+      drawGreatCircleLine(
+        ctx,
+        resultLine.from.lat,
+        resultLine.from.lng,
+        resultLine.to.lat,
+        resultLine.to.lng,
+        rotY,
+        rotX,
+        zoom,
+        W,
+        H,
+      );
+    }
+  }, [rotY, rotX, zoom, resultLine]);
 
-  /* Stop auto-spin only after LOCK IN ANSWER (revealTarget set) */
+  /* Manual spin only — inertia after drag */
   useEffect(() => {
-    if (dragging || answerLocked) return undefined;
-    const spin = setInterval(() => setRotY((r) => r + 0.15), 40);
-    return () => clearInterval(spin);
-  }, [dragging, answerLocked]);
-
-  useEffect(() => {
-    if (dragging || answerLocked) return undefined;
+    if (dragging) return undefined;
     const { x, y } = inertiaRef.current;
     if (Math.abs(x) < 0.05 && Math.abs(y) < 0.05) return undefined;
     frameRef.current = requestAnimationFrame(() => {
@@ -260,18 +305,24 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
       inertiaRef.current = { x: x * 0.88, y: y * 0.88 };
     });
     return () => cancelAnimationFrame(frameRef.current);
-  }, [dragging, answerLocked, rotY, rotX]);
+  }, [dragging, rotY, rotX]);
 
-  /* After lock-in, face the correct country and hold still */
+  /* Frame guess + answer once when results appear */
   useEffect(() => {
-    if (!revealTarget) return;
+    if (!resultLine) {
+      framedRef.current = false;
+      return;
+    }
+    if (framedRef.current) return;
+    framedRef.current = true;
+    const midLng = (resultLine.from.lng + resultLine.to.lng) / 2;
+    const midLat = (resultLine.from.lat + resultLine.to.lat) / 2;
     inertiaRef.current = { x: 0, y: 0 };
-    setRotY(revealTarget.lng);
-    setRotX((tilt) => Math.max(-45, Math.min(45, -revealTarget.lat * 0.35)));
-  }, [revealTarget?.lat, revealTarget?.lng]);
+    setRotY(midLng);
+    setRotX(Math.max(-40, Math.min(40, -midLat * 0.3)));
+  }, [resultLine]);
 
   const startDrag = (cx, cy) => {
-    if (answerLocked) return;
     setDragging(true);
     dragRef.current = { cx, cy };
     inertiaRef.current = { x: 0, y: 0 };
@@ -289,7 +340,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
 
   /* Click on sphere → lat/lng via inverse orthographic projection */
   const handleClick = (e) => {
-    if (answerLocked || !e.currentTarget) return;
+    if (resultMode || !e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const R  = (Math.min(rect.width, rect.height) / 2 - 2) * zoom;
     const cx = rect.width  / 2;
@@ -353,7 +404,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         role="button"
         tabIndex={0}
         aria-label="Interactive globe — click to place pin"
-        className={`absolute inset-0 rounded-full overflow-hidden select-none ${answerLocked ? 'cursor-default' : 'cursor-crosshair'}`}
+        className={`absolute inset-0 rounded-full overflow-hidden select-none ${resultMode ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'}`}
         style={{
           background: 'radial-gradient(circle at 38% 35%, #0A1F3A 0%, #040C18 60%, #020810 100%)',
           border: '2px solid rgba(255,0,128,0.35)',
@@ -410,27 +461,36 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
           }}
         />
 
-        {/* User pin */}
+        {/* User guess pin */}
         {pinned && (() => {
           const { x, y, visible } = project(pinned.lat, pinned.lng);
           if (!visible) return null;
+          const pinColor = resultMode ? '#FFD700' : '#FF0080';
           return (
             <div
               className="absolute z-10 pointer-events-none"
               style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-100%)' }}
             >
               <div
-                className="w-3.5 h-3.5 rounded-full"
-                style={{ background: '#FF0080', boxShadow: '0 0 12px #FF0080, 0 0 24px rgba(255,0,128,0.5)' }}
+                className="rounded-full border-2 border-black/60"
+                style={{
+                  width: resultMode ? 14 : 12,
+                  height: resultMode ? 14 : 12,
+                  background: pinColor,
+                  boxShadow: `0 0 12px ${pinColor}`,
+                }}
               />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap font-mono-arcade text-[8px] text-[#FF0080] bg-black/85 px-1.5 py-0.5">
-                📍 {pinned.label}
+              <div
+                className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap font-mono-arcade text-[8px] bg-black/90 px-1.5 py-0.5 border"
+                style={{ color: pinColor, borderColor: `${pinColor}66` }}
+              >
+                {resultMode ? 'YOUR GUESS' : pinned.label}
               </div>
             </div>
           );
         })()}
 
-        {/* Target pin (revealed after guess) */}
+        {/* Correct country pin */}
         {revealTarget && (() => {
           const { x, y, visible } = project(revealTarget.lat, revealTarget.lng);
           if (!visible) return null;
@@ -440,11 +500,15 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
               style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-100%)' }}
             >
               <div
-                className="w-3.5 h-3.5 rounded-full"
-                style={{ background: '#39FF14', boxShadow: '0 0 12px #39FF14, 0 0 24px rgba(57,255,20,0.5)' }}
+                className="w-3 h-3 rotate-45 border-2"
+                style={{
+                  background: '#39FF14',
+                  borderColor: '#0a0a0a',
+                  boxShadow: '0 0 12px #39FF14',
+                }}
               />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap font-mono-arcade text-[8px] text-[#39FF14] bg-black/85 px-1.5 py-0.5">
-                ✓ TARGET
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 whitespace-nowrap font-mono-arcade text-[8px] text-[#39FF14] bg-black/90 px-1.5 py-0.5 border border-[#39FF14]/40">
+                {revealTarget.label ?? 'ANSWER'}
               </div>
             </div>
           );
@@ -453,7 +517,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         {/* Hint */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className="font-mono-arcade text-[7px] text-[#333] tracking-widest whitespace-nowrap">
-            {answerLocked ? 'ANSWER LOCKED' : 'DRAG·ROTATE ◆ SCROLL·ZOOM'}
+            {resultMode ? 'DRAG · EXPLORE  ·  SCROLL · ZOOM' : 'DRAG · ROTATE  ·  SCROLL · ZOOM'}
           </span>
         </div>
       </div>
@@ -535,6 +599,43 @@ function drawRings(ctx, rings, rotY, rotX, zoom, W, H) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
+  ctx.restore();
+}
+
+function drawGreatCircleLine(ctx, lat1, lng1, lat2, lng2, rotY, rotX, zoom, W, H) {
+  const R = (W / 2 - 2) * zoom;
+  const cx = W / 2;
+  const cy = H / 2;
+  const path = greatCirclePath(lat1, lng1, lat2, lng2, 72);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, W / 2 - 1, 0, Math.PI * 2);
+  ctx.clip();
+
+  ctx.beginPath();
+  let penDown = false;
+  for (const [lat, lng] of path) {
+    const { x, y, visible } = orthoProject(lng, lat, rotY, rotX, R, cx, cy);
+    if (!visible) {
+      penDown = false;
+      continue;
+    }
+    if (!penDown) {
+      ctx.moveTo(x, y);
+      penDown = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
+  ctx.lineWidth = 2.25;
+  ctx.setLineDash([7, 5]);
+  ctx.shadowColor = 'rgba(255, 215, 0, 0.45)';
+  ctx.shadowBlur = 6;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -815,16 +916,27 @@ export default function SimulationPreview({
 
   function handleGeoSubmit() {
     const p = geoPrompts[geoIndex];
+    const centroid = countryCentroid(p.country) ?? { lat: p.lat, lng: p.lng };
     let pts = 0;
     let dist = null;
+    let targetLat = centroid.lat;
+    let targetLng = centroid.lng;
     if (pinnedPt) {
-      dist = Math.round(haversine(pinnedPt.lat, pinnedPt.lng, p.lat, p.lng));
-      /* Perfect score if the player pinned the correct country */
       const countryMatch =
         p.country &&
         pinnedPt.label &&
-        pinnedPt.label.trim().toLowerCase() === p.country.trim().toLowerCase();
-      pts = countryMatch ? 100 : geoPoints(dist);
+        (pinnedPt.label.trim().toLowerCase() === p.country.trim().toLowerCase() ||
+          nearestCountry(pinnedPt.lat, pinnedPt.lng).trim().toLowerCase() ===
+            p.country.trim().toLowerCase());
+      if (countryMatch) {
+        dist = 0;
+        targetLat = pinnedPt.lat;
+        targetLng = pinnedPt.lng;
+        pts = 100;
+      } else {
+        dist = Math.round(haversine(pinnedPt.lat, pinnedPt.lng, centroid.lat, centroid.lng));
+        pts = geoPoints(dist);
+      }
     }
     const hintPenalty = (p.hints ?? [])
       .slice(0, geoHintsRevealed)
@@ -839,9 +951,9 @@ export default function SimulationPreview({
       trivia: p.trivia,
       feedbackCorrect: p.feedbackCorrect,
       feedbackWrong: p.feedbackWrong,
-      location: p.location,
-      lat: p.lat,
-      lng: p.lng,
+      country: p.country,
+      lat: targetLat,
+      lng: targetLng,
     });
   }
 
@@ -997,9 +1109,9 @@ export default function SimulationPreview({
               <p className="font-mono-arcade text-[10px] text-[#555] tracking-widest">
                 CLUE {geoIndex + 1} / {geoPrompts.length}
               </p>
-              {pinnedPt && (
+              {pinnedPt && !geoFeedback && (
                 <span className="font-mono-arcade text-[9px] text-[#FF0080]">
-                  📍 {pinnedPt.label}
+                  PIN: {pinnedPt.label}
                 </span>
               )}
             </div>
@@ -1037,7 +1149,7 @@ export default function SimulationPreview({
                           onClick={viewPrevHint}
                           disabled={geoHintViewIdx <= 0}
                         >
-                          ◀ PREV
+                          PREV
                         </button>
                         <span className="stage-hint-carousel-dots">
                           {geoPrompts[geoIndex].hints.slice(0, geoHintsRevealed).map((_, i) => (
@@ -1056,7 +1168,7 @@ export default function SimulationPreview({
                           onClick={viewNextHint}
                           disabled={geoHintViewIdx >= geoHintsRevealed - 1}
                         >
-                          NEXT ▶
+                          NEXT
                         </button>
                       </div>
                     )}
@@ -1070,7 +1182,7 @@ export default function SimulationPreview({
                 >
                   {geoHintsRevealed >= (geoPrompts[geoIndex].hints?.length ?? 0)
                     ? 'ALL HINTS REVEALED'
-                    : `▶ REVEAL HINT ${geoHintsRevealed + 1} (−${geoPrompts[geoIndex].hints[geoHintsRevealed]?.penalty ?? 0} PTS)`}
+                    : `REVEAL HINT ${geoHintsRevealed + 1} (-${geoPrompts[geoIndex].hints[geoHintsRevealed]?.penalty ?? 0} PTS)`}
                 </button>
               </div>
             )}
@@ -1078,7 +1190,19 @@ export default function SimulationPreview({
             <GlobeBoard
               onPin={(pt) => { if (!geoFeedback) { setPinnedPt(pt); sfx.pin(); } }}
               pinned={pinnedPt}
-              revealTarget={geoFeedback ? { lat: geoFeedback.lat, lng: geoFeedback.lng } : null}
+              revealTarget={
+                geoFeedback
+                  ? { lat: geoFeedback.lat, lng: geoFeedback.lng, label: geoFeedback.country }
+                  : null
+              }
+              resultLine={
+                geoFeedback && pinnedPt
+                  ? {
+                      from: { lat: pinnedPt.lat, lng: pinnedPt.lng },
+                      to: { lat: geoFeedback.lat, lng: geoFeedback.lng },
+                    }
+                  : null
+              }
             />
 
             {/* Submit or feedback */}
@@ -1092,53 +1216,65 @@ export default function SimulationPreview({
                 className={`btn-arcade w-full mt-4 py-3 ${pinnedPt ? 'btn-lime' : 'btn-ghost'}`}
                 style={pinnedPt ? {} : { borderColor: '#1A1A1A', color: '#333' }}
               >
-                {pinnedPt ? '▶ LOCK IN ANSWER' : '← PLACE YOUR PIN ON THE GLOBE'}
+                {pinnedPt ? 'LOCK IN ANSWER' : 'PLACE YOUR PIN ON THE GLOBE'}
               </motion.button>
             ) : (
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 arcade-card p-4"
-                style={{
-                  borderColor:
-                    geoFeedback.pts >= 75 ? '#39FF14' : geoFeedback.pts >= 45 ? '#FFD700' : '#FF0080',
-                  borderWidth: '2px',
-                  boxShadow:
-                    geoFeedback.pts >= 75
-                      ? '0 0 20px rgba(57,255,20,0.25)'
-                      : '0 0 20px rgba(255,0,128,0.2)',
-                }}
+                className="mt-4 geo-result-panel"
               >
-                <div className="flex justify-between items-start mb-3">
+                {geoFeedback.dist !== null ? (
+                  <p className="geo-result-distance font-body text-[0.95rem] text-[#CCC] leading-relaxed mb-2">
+                    {geoFeedback.dist === 0 ? (
+                      <>
+                        Correct country —{' '}
+                        <span className="text-white font-semibold">0 km (0 mi)</span> from the
+                        answer.
+                      </>
+                    ) : (
+                      <>
+                        Your guess was{' '}
+                        <span className="text-white font-semibold">
+                          {geoFeedback.dist.toLocaleString()} km
+                        </span>{' '}
+                        ({Math.round(geoFeedback.dist * 0.621371).toLocaleString()} mi) from the
+                        correct country.
+                      </>
+                    )}
+                  </p>
+                ) : (
+                  <p className="font-mono-arcade text-[10px] text-[#555] mb-2">NO PIN PLACED</p>
+                )}
+                <div className="flex items-end justify-between gap-3 mb-3">
                   <div>
                     <p className="font-mono-arcade text-[9px] text-[#555] tracking-widest mb-1">
-                      ACTUAL LOCATION
+                      CORRECT COUNTRY
                     </p>
-                    <p className="font-display text-2xl text-white">{geoFeedback.location}</p>
-                    {geoFeedback.dist !== null && (
-                      <p className="font-mono-arcade text-[10px] text-[#555] mt-1">
-                        {geoFeedback.dist.toLocaleString()} KM FROM TARGET
-                      </p>
-                    )}
-                    {geoFeedback.dist === null && (
-                      <p className="font-mono-arcade text-[10px] text-[#555] mt-1">NO PIN PLACED</p>
-                    )}
+                    <p className="font-display text-3xl text-white">{geoFeedback.country}</p>
                     {geoFeedback.hintPenalty > 0 && (
                       <p className="font-mono-arcade text-[10px] text-[#00FFFF] mt-1">
-                        HINT COST −{geoFeedback.hintPenalty} PTS
+                        HINT COST -{geoFeedback.hintPenalty} PTS
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
-                    <p className="font-mono-arcade text-[9px] text-[#555] mb-0.5">EARNED</p>
-                    <p
-                      className="font-display text-4xl text-glow-gold"
-                      style={{ color: '#FFD700' }}
-                    >
-                      +{geoFeedback.pts}
+                  <div className="text-right shrink-0">
+                    <p className="font-mono-arcade text-[9px] text-[#555] mb-0.5">POINTS</p>
+                    <p className="font-display text-4xl" style={{ color: '#FFD700' }}>
+                      {geoFeedback.pts}
                     </p>
                   </div>
                 </div>
+                {geoFeedback.dist !== null && (
+                  <div className="geo-result-bar mb-3" aria-hidden>
+                    <div
+                      className="geo-result-bar-fill"
+                      style={{
+                        width: `${Math.max(8, Math.min(100, 100 - (geoFeedback.dist / 12000) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                )}
                 <p className="stage-clue-text text-sm border-t border-[#2A2A2A] pt-3" style={{ color: '#999' }}>
                   {geoFeedback.pts >= 45
                     ? (geoFeedback.feedbackCorrect ?? geoFeedback.trivia)
@@ -1151,7 +1287,7 @@ export default function SimulationPreview({
                   onClick={() => { sfx.navigate(); handleGeoNext(); }}
                   className="btn-arcade btn-cyan w-full mt-3 py-2.5"
                 >
-                  {geoIndex + 1 < geoPrompts.length ? '▶ NEXT CLUE' : '▶ SEE STAGE RECAP'}
+                  {geoIndex + 1 < geoPrompts.length ? 'NEXT CLUE' : 'SEE STAGE RECAP'}
                 </motion.button>
               </motion.div>
             )}
