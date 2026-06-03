@@ -1020,7 +1020,7 @@ export const feudQuestionPool = [
 
 export const stageRecaps = {
   stage1: {
-    title: 'Information Recap · Global Flows',
+    title: 'Intel Briefing · Global Flows',
     summary:
       'Stage 1 connected real places to how goods, culture, money, and diplomacy move around the world.',
     bullets: [
@@ -1036,7 +1036,7 @@ export const stageRecaps = {
     ],
   },
   stage2: {
-    title: 'Information Recap · World Systems',
+    title: 'Intel Briefing · World-Systems',
     summary:
       'Stage 2 used Core, Semi-Periphery, and Periphery as lenses — not insults, but patterns in the global economy.',
     bullets: [
@@ -1047,7 +1047,7 @@ export const stageRecaps = {
     resourceIds: ['introduction-to-globalization', 'global-economy'],
   },
   stage3: {
-    title: 'Information Recap · Everyday Globalization',
+    title: 'Intel Briefing · Everyday Globalization',
     summary:
       'Stage 3 showed how globalization shows up in ordinary life — apps, brands, migration, and shared worries.',
     bullets: [

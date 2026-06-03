@@ -645,6 +645,12 @@ function RecapOverlay({ recap, onContinue, onOpenLibrary }) {
   );
 }
 
+const worldSystemGuide = {
+  core: 'Rich and powerful countries that control technology and global business.',
+  semi: 'Growing countries—some rich, some developing.',
+  periphery: 'Less developed countries, often supplying raw materials or cheap labor.',
+};
+
 /* ══════════════════════════════════════════════════
    MAIN SIMULATION
 ══════════════════════════════════════════════════ */
@@ -715,6 +721,7 @@ export default function SimulationPreview({
   const [geoHintViewIdx, setGeoHintViewIdx] = useState(0);
 
   /* ── STAGE 2 state ── */
+  const [flagStarted, setFlagStarted] = useState(false);
   const [flagIndex, setFlagIndex] = useState(0);
   const [flagFlash, setFlagFlash] = useState(null); // 'correct' | 'wrong' | null
   const [flagFeedbackMsg, setFlagFeedbackMsg] = useState('');
@@ -726,7 +733,8 @@ export default function SimulationPreview({
   const [feudActive, setFeudActive] = useState(false);
   const [revealedByQ, setRevealedByQ] = useState({}); // { qId: Set<number> }
   const [feudAutoAdvancing, setFeudAutoAdvancing] = useState(false); // brief pause after correct
-  const [feudFinishConfirm, setFeudFinishConfirm] = useState(false); // early-exit modal
+  const [feudFinishConfirm, setFeudFinishConfirm] = useState(false);
+  const [feudLastInsight, setFeudLastInsight] = useState(null); // early-exit modal
 
   const cumulative = displayS1 + displayS2 + displayS3;
   const challengerTotal = challengerData?.total ?? null;
@@ -798,6 +806,8 @@ export default function SimulationPreview({
       pts,
       hintPenalty,
       trivia: p.trivia,
+      feedbackCorrect: p.feedbackCorrect,
+      feedbackWrong: p.feedbackWrong,
       location: p.location,
       lat: p.lat,
       lng: p.lng,
@@ -872,6 +882,7 @@ export default function SimulationPreview({
       setFeudInput('');
       const newRevealed = { ...revealedByQ, [q.id]: newSet };
       setRevealedByQ(newRevealed);
+      setFeudLastInsight(q.insight ?? null);
       setFeudAutoAdvancing(true);
       setTimeout(() => {
         setFeudAutoAdvancing(false);
@@ -1098,7 +1109,9 @@ export default function SimulationPreview({
                   </div>
                 </div>
                 <p className="stage-clue-text text-sm border-t border-[#2A2A2A] pt-3" style={{ color: '#999' }}>
-                  {geoFeedback.trivia}
+                  {geoFeedback.pts >= 45
+                    ? (geoFeedback.feedbackCorrect ?? geoFeedback.trivia)
+                    : (geoFeedback.feedbackWrong ?? geoFeedback.trivia)}
                 </p>
                 <motion.button
                   type="button"
@@ -1123,117 +1136,162 @@ export default function SimulationPreview({
             exit={{ opacity: 0, x: -60 }}
             className="max-w-lg mx-auto px-4 pt-5"
           >
-            <div className="flex items-center justify-between mb-2">
-              <p className="font-mono-arcade text-[10px] text-[#555] tracking-widest">
-                FLAG {flagIndex + 1} / {flagDeck.length}
-              </p>
-              <p className="font-mono-arcade text-[10px] text-[#FFD700]">
-                {Math.round((flagIndex / flagDeck.length) * 100)}% FILED
-              </p>
-            </div>
-
-            {/* Progress bar */}
-            <div className="h-1.5 mb-6" style={{ background: '#111', border: '1px solid #222' }}>
-              <div
-                className="h-full transition-all duration-300"
-                style={{
-                  width: `${(flagIndex / flagDeck.length) * 100}%`,
-                  background: 'linear-gradient(90deg,#FF0080,#FFD700)',
-                  boxShadow: '0 0 8px rgba(255,0,128,0.5)',
-                }}
-              />
-            </div>
-
-            {/* Flag card */}
-            <motion.div
-              key={flagIndex}
-              initial={{ rotateY: -90, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="text-center mb-6"
-            >
-              <div
-                className="mx-auto mb-4 overflow-hidden"
-                style={{
-                  width: '168px',
-                  height: '112px',
-                  border: '3px solid #2A2A2A',
-                  boxShadow: '0 0 35px rgba(0,0,0,0.8)',
-                }}
-              >
-                <img
-                  src={`https://flagcdn.com/w320/${flagDeck[flagIndex].code}.webp`}
-                  alt={flagDeck[flagIndex].name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
-              </div>
-              <p className="font-display text-4xl text-white">{flagDeck[flagIndex].name}</p>
-              <p className="font-mono-arcade text-[10px] text-[#555] mt-1 tracking-widest">
-                CORE · SEMI · OR PERIPHERY?
-              </p>
-            </motion.div>
-
-            {/* Context clue */}
-            {flagDeck[flagIndex].clue && (
-              <div className="stage-flag-clue-panel">
-                <p className="stage-flag-clue-label">CONTEXT CLUE</p>
-                <p className="stage-flag-clue-text">{flagDeck[flagIndex].clue}</p>
-              </div>
-            )}
-
-            {/* Portals */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { key: 'CORE', label: 'CORE', sub: 'Dominant', cls: 'portal-core', c: '#FFD700' },
-                { key: 'SEMI_PERIPHERY', label: 'SEMI', sub: 'Bridging', cls: 'portal-semi', c: '#00FFFF' },
-                { key: 'PERIPHERY', label: 'PERIPHERY', sub: 'Extractive', cls: 'portal-periphery', c: '#FF0080' },
-              ].map(({ key, label, sub, cls, c }) => (
+            {!flagStarted ? (
+              <div className="text-center py-10">
+                <p className="font-mono-arcade text-[10px] text-[#555] tracking-widest mb-4 uppercase">
+                  STAGE 02 · FLAG SORT
+                </p>
+                <p
+                  className="font-display text-5xl text-[#00FFFF] mb-2"
+                  style={{ textShadow: '0 0 20px rgba(0,255,255,0.45)' }}
+                >
+                  WORLD SORT
+                </p>
+                <p className="font-display text-3xl text-white mb-8">KNOW YOUR TIERS</p>
+                <div className="space-y-3 mb-8 text-left max-w-sm mx-auto">
+                  {[
+                    { label: 'CORE', color: '#FFD700', desc: worldSystemGuide.core },
+                    { label: 'SEMI-PERIPHERY', color: '#00FFFF', desc: worldSystemGuide.semi },
+                    { label: 'PERIPHERY', color: '#FF0080', desc: worldSystemGuide.periphery },
+                  ].map(({ label, color, desc }) => (
+                    <div
+                      key={label}
+                      className="arcade-card p-3"
+                      style={{ borderColor: `${color}44` }}
+                    >
+                      <p
+                        className="font-mono-arcade text-[10px] tracking-widest mb-1"
+                        style={{ color }}
+                      >
+                        {label}
+                      </p>
+                      <p className="text-xs text-[#888] leading-relaxed">{desc}</p>
+                    </div>
+                  ))}
+                </div>
                 <motion.button
-                  key={key}
                   type="button"
-                  whileHover={{ scale: 1.04, y: -4 }}
-                  whileTap={{ scale: 0.94, y: 2 }}
-                  onClick={() => { sfx.click(); handleFlagChoice(key); }}
-                  disabled={!!flagFlash}
-                  className={`${cls} p-4 text-center`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.94, y: 5 }}
+                  onClick={() => { setFlagStarted(true); sfx.submit(); }}
+                  className="btn-arcade btn-cyan px-12 py-4 text-base"
                 >
-                  <p className="font-display text-lg leading-tight" style={{ color: c }}>{label}</p>
-                  <p className="font-mono-arcade text-[8px] text-[#666] mt-1">{sub}</p>
+                  ▶ START SORTING
                 </motion.button>
-              ))}
-            </div>
-
-            {/* Flash feedback */}
-            <AnimatePresence>
-              {flagFlash && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.1 }}
-                  className="mt-4 py-3 px-4 text-center border-2 font-display text-2xl"
-                  style={{
-                    borderColor: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
-                    color: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
-                    boxShadow:
-                      flagFlash === 'correct'
-                        ? '0 0 20px rgba(57,255,20,0.4)'
-                        : '0 0 20px rgba(255,0,128,0.4)',
-                  }}
-                >
-                  <p>
-                    {flagFlash === 'correct'
-                      ? '✓ CORRECT! +50 PTS'
-                      : `✗ WRONG — ${flagDeck[flagIndex]?.category.replace('_', '-') ?? ''}`}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-mono-arcade text-[10px] text-[#555] tracking-widest">
+                    FLAG {flagIndex + 1} / {flagDeck.length}
                   </p>
-                  {flagFeedbackMsg && (
-                    <p className="stage-feedback-text" style={{ color: flagFlash === 'correct' ? '#8FE88F' : '#FF80B3' }}>
-                      {flagFeedbackMsg}
-                    </p>
-                  )}
+                  <p className="font-mono-arcade text-[10px] text-[#FFD700]">
+                    {Math.round((flagIndex / flagDeck.length) * 100)}% FILED
+                  </p>
+                </div>
+
+                <div className="h-1.5 mb-6" style={{ background: '#111', border: '1px solid #222' }}>
+                  <div
+                    className="h-full transition-all duration-300"
+                    style={{
+                      width: `${(flagIndex / flagDeck.length) * 100}%`,
+                      background: 'linear-gradient(90deg,#FF0080,#FFD700)',
+                      boxShadow: '0 0 8px rgba(255,0,128,0.5)',
+                    }}
+                  />
+                </div>
+
+                <motion.div
+                  key={flagIndex}
+                  initial={{ rotateY: -90, opacity: 0 }}
+                  animate={{ rotateY: 0, opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center mb-6"
+                >
+                  <div
+                    className="mx-auto mb-4 overflow-hidden"
+                    style={{
+                      width: '168px',
+                      height: '112px',
+                      border: '3px solid #2A2A2A',
+                      boxShadow: '0 0 35px rgba(0,0,0,0.8)',
+                    }}
+                  >
+                    <img
+                      src={`https://flagcdn.com/w320/${flagDeck[flagIndex].code}.webp`}
+                      alt={flagDeck[flagIndex].name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  </div>
+                  <p className="font-display text-4xl text-white">{flagDeck[flagIndex].name}</p>
+                  <p className="font-mono-arcade text-[10px] text-[#555] mt-1 tracking-widest">
+                    CORE · SEMI · OR PERIPHERY?
+                  </p>
                 </motion.div>
-              )}
-            </AnimatePresence>
+
+                {flagDeck[flagIndex].clue && (
+                  <div className="stage-flag-clue-panel">
+                    <p className="stage-flag-clue-label">CONTEXT CLUE</p>
+                    <p className="stage-flag-clue-text">{flagDeck[flagIndex].clue}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: 'CORE', label: 'CORE', sub: 'Rich & powerful', cls: 'portal-core', c: '#FFD700' },
+                    { key: 'SEMI_PERIPHERY', label: 'SEMI', sub: 'Growing middle', cls: 'portal-semi', c: '#00FFFF' },
+                    { key: 'PERIPHERY', label: 'PERIPHERY', sub: 'Labor & materials', cls: 'portal-periphery', c: '#FF0080' },
+                  ].map(({ key, label, sub, cls, c }) => (
+                    <motion.button
+                      key={key}
+                      type="button"
+                      whileHover={{ scale: 1.04, y: -4 }}
+                      whileTap={{ scale: 0.94, y: 2 }}
+                      onClick={() => { sfx.click(); handleFlagChoice(key); }}
+                      disabled={!!flagFlash}
+                      className={`${cls} p-4 text-center`}
+                    >
+                      <p className="font-display text-lg leading-tight" style={{ color: c }}>{label}</p>
+                      <p className="font-mono-arcade text-[8px] text-[#666] mt-1">{sub}</p>
+                    </motion.button>
+                  ))}
+                </div>
+
+                <AnimatePresence>
+                  {flagFlash && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.85 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 1.1 }}
+                      className="mt-4 py-3 px-4 text-center border-2 font-display text-2xl"
+                      style={{
+                        borderColor: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
+                        color: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
+                        boxShadow:
+                          flagFlash === 'correct'
+                            ? '0 0 20px rgba(57,255,20,0.4)'
+                            : '0 0 20px rgba(255,0,128,0.4)',
+                      }}
+                    >
+                      <p>
+                        {flagFlash === 'correct'
+                          ? '✓ CORRECT! +50 PTS'
+                          : `✗ WRONG — ${flagDeck[flagIndex]?.category.replace('_', '-') ?? ''}`}
+                      </p>
+                      {flagFeedbackMsg && (
+                        <p
+                          className="stage-feedback-text"
+                          style={{ color: flagFlash === 'correct' ? '#8FE88F' : '#FF80B3' }}
+                        >
+                          {flagFeedbackMsg}
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
           </motion.div>
         )}
 
@@ -1315,6 +1373,11 @@ export default function SimulationPreview({
                     }}
                   >
                     ✓ CORRECT — NEXT QUESTION IN...
+                    {feudLastInsight && (
+                      <p className="font-mono-arcade text-[8px] opacity-70 mt-1 normal-case tracking-normal">
+                        {feudLastInsight}
+                      </p>
+                    )}
                   </motion.div>
                 )}
 
