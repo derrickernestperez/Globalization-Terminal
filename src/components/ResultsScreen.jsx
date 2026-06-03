@@ -279,7 +279,7 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
               className={`btn-arcade w-full py-2.5 mb-2 flex items-center justify-center gap-2 text-[10px] ${copiedCode ? 'btn-lime' : 'btn-gold'}`}
             >
               <Copy size={11} />
-              {copiedCode ? '✓ CODE COPIED!' : '⧉ COPY CODE ONLY'}
+              {copiedCode ? '✓ CODE COPIED!' : ' COPY CODE ONLY'}
             </motion.button>
 
             <motion.button
