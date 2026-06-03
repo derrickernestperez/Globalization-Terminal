@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen } from 'lucide-react';
-import { feudQuestionPool, flagCountryPool, geoFlowPrompts, stageRecaps } from '../data/gameData.js';
+import {
+  FEUD_SURVEY_SIZE,
+  feudQuestionPool,
+  flagCountryPool,
+  geoFlowPrompts,
+  stageRecaps,
+} from '../data/gameData.js';
 import useSound from '../hooks/useSound.js';
 
 /* ─────────────── Constants ─────────────── */
@@ -9,6 +15,26 @@ const GEO_GUESSES = 4;
 const FLAGS_COUNT = 10;
 const GEO_TIMER_SEC = 30;
 const FEUD_TIMER_SEC = 120;
+const FEUD_URGENCY_START_SEC = 30;
+const FEUD_URGENCY_YELLOW_SEC = 15;
+const FEUD_URGENCY_RED_SEC = 10;
+
+function feudUrgencyLevel(seconds) {
+  if (seconds <= FEUD_URGENCY_RED_SEC) return 'red';
+  if (seconds <= FEUD_URGENCY_YELLOW_SEC) return 'yellow';
+  if (seconds <= FEUD_URGENCY_START_SEC) return 'green';
+  return null;
+}
+
+function feudUrgencyHeadline(seconds) {
+  if (seconds <= FEUD_URGENCY_RED_SEC) return 'FINAL SECONDS!';
+  if (seconds <= FEUD_URGENCY_YELLOW_SEC) return 'LAST 15 SECONDS';
+  return 'LAST 30 SECONDS';
+}
+
+function formatFeudClock(seconds) {
+  return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
 
 const WORLD_ATLAS_URL = 'https://unpkg.com/world-atlas@2.0.2/land-110m.json';
 
@@ -130,6 +156,27 @@ function feudMatchScore(input, answer) {
 }
 
 /** Return the single best unrevealed answer index, or -1 if none match. */
+/** Rank 0 = highest `points` (top survey answer). */
+function feudAnswerRank(answers, index) {
+  const pts = answers[index]?.points ?? 0;
+  return answers.reduce((n, a) => n + (a.points > pts ? 1 : 0), 0);
+}
+
+function feudSurveyTagline(rank, points, label) {
+  const n = FEUD_SURVEY_SIZE;
+  const count = `${points} out of ${n}`;
+  if (rank === 0) {
+    return `SURVEY SAYS: ${count} people said "${label}" — the #1 answer on the board!`;
+  }
+  if (rank === 1) {
+    return `Based on statistics: ${count} picked "${label}" — the 2nd most popular answer.`;
+  }
+  if (rank === 2) {
+    return `${count} mentioned "${label}" — the 3rd most common response.`;
+  }
+  return `${count} said "${label}" — still on the board at #4.`;
+}
+
 function findFeudMatchIndex(input, answers, revealedSet) {
   let bestIdx = -1;
   let bestScore = 0;
@@ -661,9 +708,10 @@ function drawGreatCircleLine(ctx, lat1, lng1, lat2, lng2, rotY, rotX, zoom, W, H
 }
 
 /* ── Feud Answer Slot ── */
-function FeudSlot({ answer, isRevealed, index }) {
+function FeudSlot({ answer, isRevealed, index, rank }) {
+  const surveyLabel = `${answer.points} / ${FEUD_SURVEY_SIZE}`;
   return (
-    <div className="flip-container" style={{ height: '48px' }}>
+    <div className="flip-container" style={{ height: isRevealed ? '56px' : '48px' }}>
       <div className={`flip-inner h-full ${isRevealed ? 'flipped' : ''}`}>
         {/* Front face */}
         <div
@@ -676,24 +724,67 @@ function FeudSlot({ answer, isRevealed, index }) {
           <span className="font-mono-arcade text-[10px] text-[#222] tracking-wider flex-1 text-center">
             {'▬'.repeat(Math.min(12, Math.ceil(answer.label.length / 2)))}
           </span>
-          <span className="font-mono-arcade text-[10px] text-[#2A2A2A]">+{answer.points}</span>
+          <span className="font-mono-arcade text-[10px] text-[#2A2A2A]">??</span>
         </div>
         {/* Back face */}
         <div
-          className="flip-back absolute inset-0 flex items-center justify-between px-3"
+          className="flip-back absolute inset-0 flex flex-col justify-center px-3 py-1"
           style={{
             background: 'linear-gradient(135deg,#001400,#0A2800)',
             border: '1px solid #39FF14',
             boxShadow: '0 0 12px rgba(57,255,20,0.35)',
           }}
         >
-          <span className="font-mono-arcade text-[9px] text-[#39FF14] flex-1 truncate">
-            {answer.label}
-          </span>
-          <span className="font-display text-xl text-[#FFD700] ml-3">+{answer.points}</span>
+          <div className="flex items-center justify-between gap-2 w-full">
+            <span className="font-mono-arcade text-[9px] text-[#39FF14] flex-1 truncate">
+              {rank === 0 ? '★ ' : ''}{answer.label}
+            </span>
+            <span className="font-display text-xl text-[#FFD700] shrink-0">{answer.points}</span>
+          </div>
+          <p className="feud-survey-slot-caption">
+            {rank === 0 ? 'SURVEY SAYS · ' : ''}{surveyLabel} people
+          </p>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ── Feud final countdown modal (≤30s) ── */
+function FeudUrgencyModal({ seconds }) {
+  const level = feudUrgencyLevel(seconds);
+  if (!level) return null;
+
+  return (
+    <motion.div
+      className="feud-urgency-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      aria-live="assertive"
+      role="alert"
+    >
+      <motion.div
+        className={`feud-urgency-modal feud-urgency-modal--${level}`}
+        initial={{ scale: 0.85, y: 12 }}
+        animate={{
+          scale: level === 'red' ? [1, 1.06, 1] : 1,
+          y: 0,
+        }}
+        transition={{
+          scale: level === 'red' ? { repeat: Infinity, duration: 0.55 } : { duration: 0.25 },
+        }}
+      >
+        <p className="feud-urgency-kicker">SURVEY SAYS · CLOCK IS RUNNING</p>
+        <p className="feud-urgency-headline">{feudUrgencyHeadline(seconds)}</p>
+        <p className="feud-urgency-time">{formatFeudClock(seconds)}</p>
+        <p className="feud-urgency-sub">
+          {level === 'green' && 'Stay sharp — top answers still on the board'}
+          {level === 'yellow' && 'Pick fast — every second counts'}
+          {level === 'red' && 'Type now — time is almost up!'}
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -887,7 +978,8 @@ export default function SimulationPreview({
   const [revealedByQ, setRevealedByQ] = useState({}); // { qId: Set<number> }
   const [feudAutoAdvancing, setFeudAutoAdvancing] = useState(false); // brief pause after correct
   const [feudFinishConfirm, setFeudFinishConfirm] = useState(false);
-  const [feudLastInsight, setFeudLastInsight] = useState(null); // early-exit modal
+  const [feudLastSurveyTagline, setFeudLastSurveyTagline] = useState(null);
+  const [feudLastInsight, setFeudLastInsight] = useState(null);
 
   const cumulative = displayS1 + displayS2 + displayS3;
   const challengerTotal = challengerData?.total ?? null;
@@ -1046,10 +1138,14 @@ export default function SimulationPreview({
       setFeudInput('');
       const newRevealed = { ...revealedByQ, [q.id]: newSet };
       setRevealedByQ(newRevealed);
+      const rank = feudAnswerRank(q.answers, matchedIdx);
+      setFeudLastSurveyTagline(feudSurveyTagline(rank, ans.points, ans.label));
       setFeudLastInsight(q.insight ?? null);
       setFeudAutoAdvancing(true);
       setTimeout(() => {
         setFeudAutoAdvancing(false);
+        setFeudLastSurveyTagline(null);
+        setFeudLastInsight(null);
         setFeudInput('');
         const nextIdx = findNextUnansweredFeudIdx(feudQIdx, newRevealed);
         if (nextIdx === -1) endFeud();
@@ -1502,10 +1598,13 @@ export default function SimulationPreview({
                   FAST MONEY
                 </p>
                 <p className="font-display text-4xl text-white mb-6">RULES</p>
+                <p className="font-mono-arcade text-[10px] text-[#FFD700] tracking-widest mb-4">
+                  WE SURVEYED {FEUD_SURVEY_SIZE} PEOPLE — TOP ANSWERS ARE ON THE BOARD
+                </p>
                 <ul className="text-sm text-[#666] mb-8 space-y-2 max-w-xs mx-auto text-left">
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions, hidden answer slots</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>2-minute clock — race the board</li>
-                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → jumps to next unanswered Q</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Each slot = how many (out of {FEUD_SURVEY_SIZE}) said that answer</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>8 questions · hidden slots · 2-minute clock</li>
+                  <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Get 1 correct → SURVEY SAYS tagline + points</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>PASS skips ahead · skipped Qs come back later</li>
                   <li className="flex gap-3"><span className="text-[#FF0080]">▸</span>Timer hits zero → round ends automatically</li>
                 </ul>
@@ -1522,11 +1621,17 @@ export default function SimulationPreview({
             ) : (
               /* Active feud */
               <>
+                <AnimatePresence>
+                  {feudTimer <= FEUD_URGENCY_START_SEC && (
+                    <FeudUrgencyModal key="feud-urgency" seconds={feudTimer} />
+                  )}
+                </AnimatePresence>
+
                 <div className="flex items-center justify-between mb-3">
                   <p className="font-mono-arcade text-[9px] text-[#555] tracking-widest">
                     Q {feudQIdx + 1} / {feudDeck.length}
                   </p>
-                  <p className="font-mono-arcade text-[10px] text-[#FFD700]">{displayS3} PTS THIS ROUND</p>
+                  <p className="font-mono-arcade text-[10px] text-[#FFD700]">{displayS3} SURVEY PTS EARNED</p>
                 </div>
 
                 {/* Question */}
@@ -1534,9 +1639,12 @@ export default function SimulationPreview({
                   className="arcade-card p-3 mb-3"
                   style={{ borderColor: '#FF0080', borderWidth: '2px' }}
                 >
+                  <p className="feud-survey-banner">
+                    SURVEY SAYS · {FEUD_SURVEY_SIZE} PEOPLE WERE ASKED
+                  </p>
                   <p className="stage-feud-question">{feudDeck[feudQIdx].question}</p>
                   <p className="font-mono-arcade text-[9px] text-[#555] mt-2 tracking-widest">
-                    TYPE ANY KEYWORD — MANY ANSWERS WORK
+                    GUESS A TOP ANSWER — POINTS = PEOPLE WHO SAID IT (TOTAL {FEUD_SURVEY_SIZE})
                   </p>
                 </div>
 
@@ -1544,7 +1652,16 @@ export default function SimulationPreview({
                 <div className="space-y-1.5 mb-4">
                   {feudDeck[feudQIdx].answers.map((ans, idx) => {
                     const revealed = revealedByQ[feudDeck[feudQIdx].id]?.has(idx) ?? false;
-                    return <FeudSlot key={idx} answer={ans} isRevealed={revealed} index={idx} />;
+                    const rank = feudAnswerRank(feudDeck[feudQIdx].answers, idx);
+                    return (
+                      <FeudSlot
+                        key={idx}
+                        answer={ans}
+                        isRevealed={revealed}
+                        index={idx}
+                        rank={rank}
+                      />
+                    );
                   })}
                 </div>
 
@@ -1561,6 +1678,11 @@ export default function SimulationPreview({
                     }}
                   >
                     ✓ CORRECT — NEXT QUESTION IN...
+                    {feudLastSurveyTagline && (
+                      <p className="feud-survey-tagline mt-2">
+                        {feudLastSurveyTagline}
+                      </p>
+                    )}
                     {feudLastInsight && (
                       <p className="font-mono-arcade text-[8px] opacity-70 mt-1 normal-case tracking-normal">
                         {feudLastInsight}

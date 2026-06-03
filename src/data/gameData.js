@@ -817,6 +817,9 @@ export const flagCountryPool = [
   },
 ];
 
+/** Family Feud-style: each answer's `points` = people (out of 100) who said it; must sum to 100 per question. */
+export const FEUD_SURVEY_SIZE = 100;
+
 export const feudQuestionPool = [
   {
     id: 'everyday-globalization',
@@ -1128,7 +1131,7 @@ export const feudQuestionPool = [
       },
       {
         label: 'Sign language / gestures',
-        points: 10,
+        points: 20,
         match: ['sign language', 'hand signals', 'pointing', 'gestures', 'body language', 'charades', 'translator app'],
       },
     ],
@@ -1558,11 +1561,11 @@ export const stageRecaps = {
   stage3: {
     title: 'Intel Briefing · Everyday Globalization',
     summary:
-      'Stage 3 showed how globalization shows up in ordinary life — apps, brands, migration, and shared worries.',
+      'Stage 3 used a 100-person survey board — each score was how many people gave that everyday answer.',
     bullets: [
+      'Top slots meant the most common answers — just like Family Feud statistics.',
       'You interact with globalization every time you shop, scroll, or eat.',
       'Many answers work because people share similar daily experiences worldwide.',
-      'Debate about globalization is really debate about fairness and opportunity.',
     ],
     resourceIds: [
       'introduction-to-globalization',

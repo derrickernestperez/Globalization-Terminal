@@ -173,6 +173,35 @@ body::before {
   color: #F0F0F0;
   font-weight: 600;
 }
+.feud-survey-banner {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.5rem;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+  color: #FFD700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+.feud-survey-tagline {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #E8FFE0;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  max-width: 28rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.feud-survey-slot-caption {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.45rem;
+  line-height: 1.4;
+  color: rgba(57, 255, 20, 0.75);
+  margin: 0.15rem 0 0;
+  letter-spacing: 0.04em;
+}
 .stage-feedback-text {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 0.85rem;
