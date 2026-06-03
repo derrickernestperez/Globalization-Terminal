@@ -789,9 +789,17 @@ function FeudUrgencyModal({ seconds }) {
 }
 
 /* ── HUD ── */
-function GameHUD({ stageLabel, cumulative, timer, timerMax, challengerTotal }) {
+function GameHUD({ stageLabel, cumulative, timer, timerMax, challengerTotal, feudUrgency }) {
   const isLow = timer !== null && timer <= 10;
   const pct = timerMax > 0 && timer !== null ? Math.max(0, (timer / timerMax) * 100) : null;
+  const urgencyColors = {
+    green: { bar: '#39FF14', text: '#39FF14' },
+    yellow: { bar: '#FFD700', text: '#FFD700' },
+    red: { bar: '#FF0080', text: '#FF0080' },
+  };
+  const urgency = feudUrgency ? urgencyColors[feudUrgency] : null;
+  const barColor = urgency?.bar ?? (isLow ? '#FF0080' : '#00FFFF');
+  const textColor = urgency?.text ?? (isLow ? '#FF0080' : '#00FFFF');
 
   return (
     <div className="hud-panel sticky top-8 z-40 px-4 py-2 flex flex-wrap items-center gap-3 gap-y-1.5">
@@ -806,13 +814,14 @@ function GameHUD({ stageLabel, cumulative, timer, timerMax, challengerTotal }) {
               className="h-full transition-all duration-1000"
               style={{
                 width: `${pct}%`,
-                background: isLow ? '#FF0080' : '#00FFFF',
-                boxShadow: `0 0 6px ${isLow ? '#FF0080' : '#00FFFF'}`,
+                background: barColor,
+                boxShadow: `0 0 6px ${barColor}`,
               }}
             />
           </div>
           <span
-            className={`font-mono-arcade text-sm tracking-wide ${isLow ? 'text-[#FF0080] animate-pulse' : 'text-[#00FFFF]'}`}
+            className={`font-mono-arcade text-sm tracking-wide ${urgency === 'red' || isLow ? 'animate-pulse' : ''}`}
+            style={{ color: textColor }}
           >
             {`${String(Math.floor(timer / 60)).padStart(2, '0')}:${String(timer % 60).padStart(2, '0')}`}
           </span>
@@ -1199,6 +1208,8 @@ export default function SimulationPreview({
 
   const hudTimer = gameStage === 'stage1' ? geoTimer : gameStage === 'stage3' ? feudTimer : null;
   const hudTimerMax = gameStage === 'stage1' ? GEO_TIMER_SEC : gameStage === 'stage3' ? FEUD_TIMER_SEC : null;
+  const hudFeudUrgency =
+    gameStage === 'stage3' && feudActive ? feudUrgencyLevel(feudTimer) : null;
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
@@ -1209,6 +1220,7 @@ export default function SimulationPreview({
         timer={hudTimer}
         timerMax={hudTimerMax}
         challengerTotal={challengerTotal}
+        feudUrgency={hudFeudUrgency}
       />
 
       <AnimatePresence mode="wait">
