@@ -188,8 +188,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const ringsRef = useRef(null); // decoded topojson rings
-  const pinLocked = !!(pinned || revealTarget);
-  const viewLocked = !!revealTarget;
+  const answerLocked = !!revealTarget;
 
   /* Fetch world atlas topojson once */
   useEffect(() => {
@@ -244,15 +243,15 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
     drawRings(ctx, rings, rotY, rotX, zoom, W, H);
   }, [rotY, rotX, zoom]);
 
-  /* Stop auto-spin once a pin is placed or answer is revealed */
+  /* Stop auto-spin only after LOCK IN ANSWER (revealTarget set) */
   useEffect(() => {
-    if (dragging || pinLocked) return undefined;
+    if (dragging || answerLocked) return undefined;
     const spin = setInterval(() => setRotY((r) => r + 0.15), 40);
     return () => clearInterval(spin);
-  }, [dragging, pinLocked]);
+  }, [dragging, answerLocked]);
 
   useEffect(() => {
-    if (dragging || pinLocked) return undefined;
+    if (dragging || answerLocked) return undefined;
     const { x, y } = inertiaRef.current;
     if (Math.abs(x) < 0.05 && Math.abs(y) < 0.05) return undefined;
     frameRef.current = requestAnimationFrame(() => {
@@ -261,19 +260,18 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
       inertiaRef.current = { x: x * 0.88, y: y * 0.88 };
     });
     return () => cancelAnimationFrame(frameRef.current);
-  }, [dragging, pinLocked, rotY, rotX]);
+  }, [dragging, answerLocked, rotY, rotX]);
 
-  /* Face the pinned / target country and kill drift so markers stay on the landmass */
+  /* After lock-in, face the correct country and hold still */
   useEffect(() => {
-    const target = revealTarget ?? pinned;
-    if (!target) return;
+    if (!revealTarget) return;
     inertiaRef.current = { x: 0, y: 0 };
-    setRotY(target.lng);
-    setRotX((tilt) => Math.max(-45, Math.min(45, -target.lat * 0.35)));
-  }, [pinned?.lat, pinned?.lng, revealTarget?.lat, revealTarget?.lng]);
+    setRotY(revealTarget.lng);
+    setRotX((tilt) => Math.max(-45, Math.min(45, -revealTarget.lat * 0.35)));
+  }, [revealTarget?.lat, revealTarget?.lng]);
 
   const startDrag = (cx, cy) => {
-    if (viewLocked) return;
+    if (answerLocked) return;
     setDragging(true);
     dragRef.current = { cx, cy };
     inertiaRef.current = { x: 0, y: 0 };
@@ -291,7 +289,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
 
   /* Click on sphere → lat/lng via inverse orthographic projection */
   const handleClick = (e) => {
-    if (viewLocked || !e.currentTarget) return;
+    if (answerLocked || !e.currentTarget) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const R  = (Math.min(rect.width, rect.height) / 2 - 2) * zoom;
     const cx = rect.width  / 2;
@@ -355,7 +353,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         role="button"
         tabIndex={0}
         aria-label="Interactive globe — click to place pin"
-        className={`absolute inset-0 rounded-full overflow-hidden select-none ${viewLocked ? 'cursor-default' : 'cursor-crosshair'}`}
+        className={`absolute inset-0 rounded-full overflow-hidden select-none ${answerLocked ? 'cursor-default' : 'cursor-crosshair'}`}
         style={{
           background: 'radial-gradient(circle at 38% 35%, #0A1F3A 0%, #040C18 60%, #020810 100%)',
           border: '2px solid rgba(255,0,128,0.35)',
@@ -455,11 +453,7 @@ function GlobeBoard({ onPin, pinned, revealTarget }) {
         {/* Hint */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className="font-mono-arcade text-[7px] text-[#333] tracking-widest whitespace-nowrap">
-            {viewLocked
-              ? 'PIN LOCKED'
-              : pinLocked
-                ? 'DRAG·ADJUST VIEW ◆ SCROLL·ZOOM'
-                : 'DRAG·ROTATE ◆ SCROLL·ZOOM'}
+            {answerLocked ? 'ANSWER LOCKED' : 'DRAG·ROTATE ◆ SCROLL·ZOOM'}
           </span>
         </div>
       </div>
