@@ -45,6 +45,141 @@ body::before {
 ═══════════════════════════════════════ */
 .font-display  { font-family: 'Bebas Neue', 'Impact', 'Arial Narrow', sans-serif; }
 .font-mono-arcade { font-family: 'Share Tech Mono', 'Courier New', monospace; }
+.font-body { font-family: 'Inter', system-ui, sans-serif; }
+
+/* Stage clue / hint panels — readable body + neon frame */
+.stage-clue-panel {
+  background: linear-gradient(135deg, #111 0%, #0d0d12 100%);
+  border: 2px solid #FF0080;
+  box-shadow: 0 0 18px rgba(255, 0, 128, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.stage-clue-title {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #FF0080;
+}
+.stage-clue-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #E8E8E8;
+  font-weight: 500;
+}
+.stage-hint-carousel-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+.stage-hint-nav-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  background: transparent;
+  color: #00FFFF;
+  cursor: pointer;
+}
+.stage-hint-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.stage-hint-carousel-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.stage-hint-dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #2A2A2A;
+  cursor: pointer;
+}
+.stage-hint-dot.is-active {
+  background: #00FFFF;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+}
+.stage-hint-chip {
+  background: rgba(0, 255, 255, 0.06);
+  border: 1px solid rgba(0, 255, 255, 0.35);
+  border-left: 3px solid #00FFFF;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.08);
+}
+.stage-hint-chip-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  color: #00FFFF;
+  margin-bottom: 0.25rem;
+}
+.stage-hint-chip-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #D4D4D4;
+}
+.stage-hint-btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.55rem 0.75rem;
+  border: 2px solid #00FFFF;
+  background: rgba(0, 255, 255, 0.08);
+  color: #00FFFF;
+  cursor: pointer;
+  transition: box-shadow 0.15s, background 0.15s;
+}
+.stage-hint-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.14);
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.35);
+}
+.stage-hint-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.stage-flag-clue-panel {
+  background: #0f0f0f;
+  border: 2px solid #FFD700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.12);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+}
+.stage-flag-clue-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.14em;
+  color: #FFD700;
+  margin-bottom: 0.35rem;
+}
+.stage-flag-clue-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #E0E0E0;
+}
+.stage-feud-question {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: #F0F0F0;
+  font-weight: 600;
+}
+.stage-feedback-text {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #AAA;
+  margin-top: 0.35rem;
+}
 
 /* ═══════════════════════════════════════
    TEXT GLOW

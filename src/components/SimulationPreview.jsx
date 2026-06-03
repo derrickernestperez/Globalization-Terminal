@@ -65,7 +65,59 @@ const COUNTRY_HINTS = [
   { n: 'Argentina', lat: -38.42, lng: -63.62 },
   { n: 'Indonesia', lat: -0.79, lng: 113.92 },
   { n: 'Egypt', lat: 26.82, lng: 30.80 },
+  { n: 'Italy', lat: 41.87, lng: 12.57 },
+  { n: 'Spain', lat: 40.46, lng: -3.75 },
+  { n: 'Canada', lat: 56.13, lng: -106.35 },
+  { n: 'Turkey', lat: 38.96, lng: 35.24 },
+  { n: 'Vietnam', lat: 14.06, lng: 108.28 },
+  { n: 'Poland', lat: 51.92, lng: 19.15 },
+  { n: 'Singapore', lat: 1.35, lng: 103.82 },
+  { n: 'Sweden', lat: 60.13, lng: 18.64 },
+  { n: 'Thailand', lat: 15.87, lng: 100.99 },
+  { n: 'Malaysia', lat: 4.21, lng: 101.98 },
+  { n: 'South Africa', lat: -30.56, lng: 22.94 },
 ];
+
+function normalizeFeudInput(raw) {
+  return raw.trim().toLowerCase().replace(/[^\w\s'-]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function feudMatchScore(input, answer) {
+  if (!input) return 0;
+  const label = answer.label.toLowerCase();
+  if (input === label) return 1000 + label.length;
+  if (label.includes(input) && input.length >= 3) return 500 + input.length;
+  if (input.includes(label) && label.length >= 4) return 450 + label.length;
+
+  let best = 0;
+  for (const m of answer.match) {
+    const key = m.toLowerCase().trim();
+    if (!key) continue;
+    if (input === key) {
+      best = Math.max(best, 300 + key.length);
+    } else if (key.length >= 3 && input.includes(key)) {
+      best = Math.max(best, 100 + key.length);
+    } else if (input.length >= 4 && key.includes(input)) {
+      best = Math.max(best, 50 + input.length);
+    }
+  }
+  return best;
+}
+
+/** Return the single best unrevealed answer index, or -1 if none match. */
+function findFeudMatchIndex(input, answers, revealedSet) {
+  let bestIdx = -1;
+  let bestScore = 0;
+  answers.forEach((ans, idx) => {
+    if (revealedSet.has(idx)) return;
+    const score = feudMatchScore(input, ans);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = idx;
+    }
+  });
+  return bestScore > 0 ? bestIdx : -1;
+}
 
 function nearestCountry(lat, lng) {
   let best = COUNTRY_HINTS[0];
@@ -622,7 +674,7 @@ export default function SimulationPreview({
     [seed],
   );
 
-  const { playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning } = useSound();
+  const { playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning, playHintReveal } = useSound();
 
   const sfx = useMemo(
     () => ({
@@ -632,8 +684,9 @@ export default function SimulationPreview({
       navigate: () => { if (!isMuted) playNavigate(); },
       good:     () => { if (!isMuted) playSuccess(); },
       bad:      () => { if (!isMuted) playWarning(); },
+      hint:     () => { if (!isMuted) playHintReveal(); },
     }),
-    [isMuted, playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning],
+    [isMuted, playUiClick, playPinDrop, playSubmit, playNavigate, playSuccess, playWarning, playHintReveal],
   );
 
   /* ── Running score refs (avoid stale closure) ── */
@@ -658,10 +711,13 @@ export default function SimulationPreview({
   const [geoTimer, setGeoTimer] = useState(GEO_TIMER_SEC);
   const [pinnedPt, setPinnedPt] = useState(null);
   const [geoFeedback, setGeoFeedback] = useState(null);
+  const [geoHintsRevealed, setGeoHintsRevealed] = useState(0);
+  const [geoHintViewIdx, setGeoHintViewIdx] = useState(0);
 
   /* ── STAGE 2 state ── */
   const [flagIndex, setFlagIndex] = useState(0);
   const [flagFlash, setFlagFlash] = useState(null); // 'correct' | 'wrong' | null
+  const [flagFeedbackMsg, setFlagFeedbackMsg] = useState('');
 
   /* ── STAGE 3 state ── */
   const [feudQIdx, setFeudQIdx] = useState(0);
@@ -696,6 +752,28 @@ export default function SimulationPreview({
   }, [gameStage, feudTimer, feudActive]);
 
   /* ───── Stage 1 handlers ───── */
+  function revealGeoHint() {
+    const hints = geoPrompts[geoIndex]?.hints ?? [];
+    if (geoFeedback || geoHintsRevealed >= hints.length) return;
+    sfx.hint();
+    setGeoHintsRevealed((n) => {
+      setGeoHintViewIdx(n);
+      return n + 1;
+    });
+  }
+
+  function viewPrevHint() {
+    if (geoHintViewIdx <= 0) return;
+    sfx.click();
+    setGeoHintViewIdx((i) => i - 1);
+  }
+
+  function viewNextHint() {
+    if (geoHintViewIdx >= geoHintsRevealed - 1) return;
+    sfx.click();
+    setGeoHintViewIdx((i) => i + 1);
+  }
+
   function handleGeoSubmit() {
     const p = geoPrompts[geoIndex];
     let pts = 0;
@@ -709,9 +787,21 @@ export default function SimulationPreview({
         pinnedPt.label.trim().toLowerCase() === p.country.trim().toLowerCase();
       pts = countryMatch ? 100 : geoPoints(dist);
     }
+    const hintPenalty = (p.hints ?? [])
+      .slice(0, geoHintsRevealed)
+      .reduce((sum, h) => sum + (h.penalty ?? 0), 0);
+    pts = Math.max(0, pts - hintPenalty);
     addS1(pts);
     if (pts >= 70) sfx.good(); else sfx.bad();
-    setGeoFeedback({ dist, pts, trivia: p.trivia, location: p.location, lat: p.lat, lng: p.lng });
+    setGeoFeedback({
+      dist,
+      pts,
+      hintPenalty,
+      trivia: p.trivia,
+      location: p.location,
+      lat: p.lat,
+      lng: p.lng,
+    });
   }
 
   function handleGeoNext() {
@@ -721,6 +811,8 @@ export default function SimulationPreview({
       setGeoIndex((i) => i + 1);
       setPinnedPt(null);
       setGeoFeedback(null);
+      setGeoHintsRevealed(0);
+      setGeoHintViewIdx(0);
       setGeoTimer(GEO_TIMER_SEC);
     }
   }
@@ -728,19 +820,26 @@ export default function SimulationPreview({
   /* ───── Stage 2 handlers ───── */
   function handleFlagChoice(cat) {
     if (flagFlash !== null) return;
-    const correct = flagDeck[flagIndex].category === cat;
+    const flag = flagDeck[flagIndex];
+    const correct = flag.category === cat;
     const pts = correct ? 50 : 0;
     addS2(pts);
     if (correct) sfx.good(); else sfx.bad();
+    setFlagFeedbackMsg(
+      correct
+        ? (flag.feedbackCorrect ?? 'Correct classification!')
+        : (flag.feedbackWrong ?? `This nation is ${flag.category.replace('_', ' ').toLowerCase()}.`),
+    );
     setFlagFlash(correct ? 'correct' : 'wrong');
     setTimeout(() => {
       setFlagFlash(null);
+      setFlagFeedbackMsg('');
       if (flagIndex + 1 >= flagDeck.length) {
         setGameStage('s2-recap');
       } else {
         setFlagIndex((i) => i + 1);
       }
-    }, 900);
+    }, 2200);
   }
 
   /* ───── Stage 3 helpers ───── */
@@ -760,20 +859,15 @@ export default function SimulationPreview({
   /* ───── Stage 3 handlers ───── */
   function handleFeudSubmit() {
     const q = feudDeck[feudQIdx];
-    const val = feudInput.trim().toLowerCase();
+    const val = normalizeFeudInput(feudInput);
     if (!val || feudAutoAdvancing) return;
     const already = revealedByQ[q.id] ?? new Set();
     const newSet = new Set(already);
-    let matched = false;
-    q.answers.forEach((ans, idx) => {
-      if (newSet.has(idx)) return;
-      if (ans.match.some((m) => val.includes(m))) {
-        matched = true;
-        newSet.add(idx);
-        addS3(ans.points);
-      }
-    });
-    if (matched) {
+    const matchedIdx = findFeudMatchIndex(val, q.answers, newSet);
+    if (matchedIdx >= 0) {
+      const ans = q.answers[matchedIdx];
+      newSet.add(matchedIdx);
+      addS3(ans.points);
       sfx.good();
       setFeudInput('');
       const newRevealed = { ...revealedByQ, [q.id]: newSet };
@@ -869,14 +963,75 @@ export default function SimulationPreview({
             </div>
 
             <div
-              className="arcade-card p-4 mb-4"
-              style={{ borderColor: '#FF0080', borderWidth: '2px' }}
+              className="stage-clue-panel p-4 mb-3"
             >
-              <p className="font-mono-arcade text-[9px] text-[#FF0080] tracking-widest uppercase mb-2">
+              <p className="stage-clue-title mb-2">
                 {geoPrompts[geoIndex].title}
               </p>
-              <p className="text-sm text-[#CCC] leading-relaxed">{geoPrompts[geoIndex].prompt}</p>
+              <p className="stage-clue-text">{geoPrompts[geoIndex].prompt}</p>
             </div>
+
+            {/* Hint carousel — one hint visible at a time */}
+            {!geoFeedback && (geoPrompts[geoIndex].hints?.length ?? 0) > 0 && (
+              <div className="mb-4">
+                {geoHintsRevealed > 0 && (
+                  <div className="stage-hint-carousel mb-3">
+                    <div className="stage-hint-chip">
+                      <p className="stage-hint-chip-label">
+                        HINT {geoHintViewIdx + 1} / {geoPrompts[geoIndex].hints.length}
+                        {geoPrompts[geoIndex].hints[geoHintViewIdx]?.penalty
+                          ? ` · −${geoPrompts[geoIndex].hints[geoHintViewIdx].penalty} PTS`
+                          : ''}
+                      </p>
+                      <p className="stage-hint-chip-text">
+                        {geoPrompts[geoIndex].hints[geoHintViewIdx].text}
+                      </p>
+                    </div>
+                    {geoHintsRevealed > 1 && (
+                      <div className="stage-hint-carousel-nav">
+                        <button
+                          type="button"
+                          className="stage-hint-nav-btn"
+                          onClick={viewPrevHint}
+                          disabled={geoHintViewIdx <= 0}
+                        >
+                          ◀ PREV
+                        </button>
+                        <span className="stage-hint-carousel-dots">
+                          {geoPrompts[geoIndex].hints.slice(0, geoHintsRevealed).map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              aria-label={`View hint ${i + 1}`}
+                              className={`stage-hint-dot${i === geoHintViewIdx ? ' is-active' : ''}`}
+                              onClick={() => { sfx.click(); setGeoHintViewIdx(i); }}
+                            />
+                          ))}
+                        </span>
+                        <button
+                          type="button"
+                          className="stage-hint-nav-btn"
+                          onClick={viewNextHint}
+                          disabled={geoHintViewIdx >= geoHintsRevealed - 1}
+                        >
+                          NEXT ▶
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="stage-hint-btn w-full"
+                  onClick={revealGeoHint}
+                  disabled={geoHintsRevealed >= (geoPrompts[geoIndex].hints?.length ?? 0)}
+                >
+                  {geoHintsRevealed >= (geoPrompts[geoIndex].hints?.length ?? 0)
+                    ? 'ALL HINTS REVEALED'
+                    : `▶ REVEAL HINT ${geoHintsRevealed + 1} (−${geoPrompts[geoIndex].hints[geoHintsRevealed]?.penalty ?? 0} PTS)`}
+                </button>
+              </div>
+            )}
 
             <GlobeBoard
               onPin={(pt) => { if (!geoFeedback) { setPinnedPt(pt); sfx.pin(); } }}
@@ -926,6 +1081,11 @@ export default function SimulationPreview({
                     {geoFeedback.dist === null && (
                       <p className="font-mono-arcade text-[10px] text-[#555] mt-1">NO PIN PLACED</p>
                     )}
+                    {geoFeedback.hintPenalty > 0 && (
+                      <p className="font-mono-arcade text-[10px] text-[#00FFFF] mt-1">
+                        HINT COST −{geoFeedback.hintPenalty} PTS
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-mono-arcade text-[9px] text-[#555] mb-0.5">EARNED</p>
@@ -937,7 +1097,7 @@ export default function SimulationPreview({
                     </p>
                   </div>
                 </div>
-                <p className="text-xs text-[#666] leading-relaxed border-t border-[#2A2A2A] pt-3">
+                <p className="stage-clue-text text-sm border-t border-[#2A2A2A] pt-3" style={{ color: '#999' }}>
                   {geoFeedback.trivia}
                 </p>
                 <motion.button
@@ -1009,10 +1169,18 @@ export default function SimulationPreview({
                 />
               </div>
               <p className="font-display text-4xl text-white">{flagDeck[flagIndex].name}</p>
-              <p className="font-mono-arcade text-[10px] text-[#444] mt-1 tracking-widest">
-                CLASSIFY THIS NATION — WORLD-SYSTEMS THEORY
+              <p className="font-mono-arcade text-[10px] text-[#555] mt-1 tracking-widest">
+                CORE · SEMI · OR PERIPHERY?
               </p>
             </motion.div>
+
+            {/* Context clue */}
+            {flagDeck[flagIndex].clue && (
+              <div className="stage-flag-clue-panel">
+                <p className="stage-flag-clue-label">CONTEXT CLUE</p>
+                <p className="stage-flag-clue-text">{flagDeck[flagIndex].clue}</p>
+              </div>
+            )}
 
             {/* Portals */}
             <div className="grid grid-cols-3 gap-3">
@@ -1026,7 +1194,7 @@ export default function SimulationPreview({
                   type="button"
                   whileHover={{ scale: 1.04, y: -4 }}
                   whileTap={{ scale: 0.94, y: 2 }}
-                  onClick={() => handleFlagChoice(key)}
+                  onClick={() => { sfx.click(); handleFlagChoice(key); }}
                   disabled={!!flagFlash}
                   className={`${cls} p-4 text-center`}
                 >
@@ -1043,7 +1211,7 @@ export default function SimulationPreview({
                   initial={{ opacity: 0, scale: 0.85 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.1 }}
-                  className="mt-4 py-3 text-center border-2 font-display text-2xl"
+                  className="mt-4 py-3 px-4 text-center border-2 font-display text-2xl"
                   style={{
                     borderColor: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
                     color: flagFlash === 'correct' ? '#39FF14' : '#FF0080',
@@ -1053,9 +1221,16 @@ export default function SimulationPreview({
                         : '0 0 20px rgba(255,0,128,0.4)',
                   }}
                 >
-                  {flagFlash === 'correct'
-                    ? '✓ CORRECT! +50 PTS'
-                    : `✗ WRONG — ${flagDeck[flagIndex]?.category.replace('_', '-') ?? ''}`}
+                  <p>
+                    {flagFlash === 'correct'
+                      ? '✓ CORRECT! +50 PTS'
+                      : `✗ WRONG — ${flagDeck[flagIndex]?.category.replace('_', '-') ?? ''}`}
+                  </p>
+                  {flagFeedbackMsg && (
+                    <p className="stage-feedback-text" style={{ color: flagFlash === 'correct' ? '#8FE88F' : '#FF80B3' }}>
+                      {flagFeedbackMsg}
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1113,7 +1288,10 @@ export default function SimulationPreview({
                   className="arcade-card p-3 mb-3"
                   style={{ borderColor: '#FF0080', borderWidth: '2px' }}
                 >
-                  <p className="text-sm text-[#CCC] leading-relaxed">{feudDeck[feudQIdx].question}</p>
+                  <p className="stage-feud-question">{feudDeck[feudQIdx].question}</p>
+                  <p className="font-mono-arcade text-[9px] text-[#555] mt-2 tracking-widest">
+                    TYPE ANY KEYWORD — MANY ANSWERS WORK
+                  </p>
                 </div>
 
                 {/* Answer slots */}

@@ -4,62 +4,63 @@ import { ChevronLeft, ChevronRight, ChevronUp, Users } from 'lucide-react';
 
 const DEVELOPERS = [
   {
+    name: 'Delos Trinos, Cedric Vincent',
+    nickname: 'Cedric',
+    age: 22,
+    globalizationForMeIs: 'Working with people from other places and learning from how they do things.',
+    color: '#FF6B35',
+    shadow: '0 0 18px rgba(255,107,53,0.45)',
+  },
+  {
     name: 'Gito, Rhic Emmanuel',
-    initials: 'RE',
-    age: 20,
-    role: 'Frontend Developer',
-    motto: '"The code is the map; the world is just data."',
+    nickname: 'Rhic',
+    age: 21,
+    globalizationForMeIs: 'Opening my phone and seeing the same apps, videos, and trends people use abroad.',
     color: '#00FFFF',
     shadow: '0 0 18px rgba(0,255,255,0.45)',
   },
   {
     name: 'Mallari, Russell Mark A.',
-    initials: 'RM',
-    age: 21,
-    role: 'Backend Developer',
-    motto: '"Logic is the only language that never lies."',
+    nickname: 'Russell',
+    age: 22,
+    globalizationForMeIs: 'How one product can be designed here, built there, and sold almost anywhere.',
     color: '#FF0080',
     shadow: '0 0 18px rgba(255,0,128,0.45)',
   },
   {
     name: 'Ocubillo, Gypsy Brygxs',
-    initials: 'GB',
-    age: 20,
-    role: 'UI/UX Designer',
-    motto: '"Good design speaks before you even click."',
+    nickname: 'Gypsy',
+    age: 23,
+    globalizationForMeIs: 'When songs, shows, and styles from other countries become normal in daily life.',
     color: '#FFD700',
     shadow: '0 0 18px rgba(255,215,0,0.45)',
   },
   {
     name: 'Perez, Derrick Ernest',
-    initials: 'DE',
-    age: 22,
-    role: 'Project Lead',
-    motto: '"A team aligned always beats a genius alone."',
+    nickname: 'Derrick',
+    age: 24,
+    globalizationForMeIs: 'The world feels closer, but some countries still get more of the benefits than others.',
     color: '#39FF14',
     shadow: '0 0 18px rgba(57,255,20,0.45)',
   },
   {
     name: 'Relosa, John Carlo B.',
-    initials: 'JC',
-    age: 21,
-    role: 'Full Stack Developer',
-    motto: '"Build it. Break it. Fix it. Ship it."',
+    nickname: 'Carlo',
+    age: 22,
+    globalizationForMeIs: 'Families sending money home from abroad just to keep everyday life going here.',
     color: '#BF5FFF',
     shadow: '0 0 18px rgba(191,95,255,0.45)',
   },
-  {
-    name: 'Delos Trinos, Cedric Vincent',
-    initials: 'CV',
-    age: 20,
-    role: 'Developer',
-    motto: '"Ship small, ship often, ship together."',
-    color: '#FF6B35',
-    shadow: '0 0 18px rgba(255,107,53,0.45)',
-  },
 ];
 
-function HexAvatar({ initials, color, shadow }) {
+function nicknameInitials(nickname) {
+  const parts = nickname.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return nickname.slice(0, 2).toUpperCase();
+}
+
+function HexAvatar({ nickname, color, shadow }) {
+  const initials = nicknameInitials(nickname);
   return (
     <div className="relative mx-auto flex items-center justify-center" style={{ width: 80, height: 80 }}>
       <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full">
@@ -157,7 +158,7 @@ export default function Footer() {
                         boxShadow: `inset 0 0 40px ${dev.color}06`,
                       }}
                     >
-                      <HexAvatar initials={dev.initials} color={dev.color} shadow={dev.shadow} />
+                      <HexAvatar nickname={dev.nickname} color={dev.color} shadow={dev.shadow} />
 
                       <h3
                         className="font-display text-[1.25rem] mt-3 tracking-wide"
@@ -175,15 +176,18 @@ export default function Footer() {
                             background: `${dev.color}12`,
                           }}
                         >
-                          {dev.role}
+                          {dev.nickname}
                         </span>
                         <span className="font-mono-arcade text-[8px] text-[#444] tracking-widest">
                           AGE {dev.age}
                         </span>
                       </div>
 
-                      <p className="font-mono-arcade text-[10px] text-[#666] italic tracking-wide leading-relaxed max-w-[17rem]">
-                        {dev.motto}
+                      <p className="font-mono-arcade text-[9px] text-[#555] tracking-widest uppercase mb-1.5">
+                        Globalization for me is
+                      </p>
+                      <p className="font-body text-[0.85rem] text-[#AAA] italic leading-relaxed max-w-[17rem]">
+                        &ldquo;{dev.globalizationForMeIs}&rdquo;
                       </p>
                     </div>
                   </motion.div>

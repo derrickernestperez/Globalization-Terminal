@@ -32,7 +32,6 @@ const saveBest = (name, total) => {
 };
 
 export default function ResultsScreen({ username, scores, challengerData, onPlayAgain, onOpenLibrary, onCongratsSound }) {
-  const [copied, setCopied] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isNewBest, setIsNewBest] = useState(false);
   const [prevBest, setPrevBest] = useState(null);
@@ -72,9 +71,6 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
 
   const token = encodeToken(username, scores);
 
-  const buildMessage = () =>
-    `⚡ GLOBALIZATION TERMINAL CHALLENGE ⚡\n\nI am ${username} and I scored ${scores.total} pts!\nCan you beat my score? 🌐\n\nPlay here: ${SITE_URL}\n\nPaste my challenge code in the ◈ CHALLENGER mode:\n${token}`;
-
   const handleCopyCode = () => {
     if (!token) return;
     navigator.clipboard.writeText(token).then(() => {
@@ -87,16 +83,8 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
     e.target.select();
   };
 
-  const handleCopy = () => {
-    if (!token) return;
-    navigator.clipboard.writeText(buildMessage()).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
-  };
-
   const handleShare = async () => {
-    const msg = buildMessage();
+    const msg = `I scored ${scores.total} pts on Globalization Terminal! Play: ${SITE_URL}\nChallenge code:\n${token}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Globalization Terminal Challenge', text: msg });
@@ -294,34 +282,16 @@ export default function ResultsScreen({ username, scores, challengerData, onPlay
               {copiedCode ? '✓ CODE COPIED!' : '⧉ COPY CODE ONLY'}
             </motion.button>
 
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.94, y: 5 }}
-                onClick={handleCopy}
-                className={`btn-arcade flex-1 py-2.5 flex items-center justify-center gap-2 text-[10px] ${copied ? 'btn-lime' : 'btn-gold'}`}
-              >
-                <Copy size={11} />
-                {copied ? '✓ COPIED!' : 'COPY MESSAGE'}
-              </motion.button>
-
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.94, y: 5 }}
-                onClick={handleShare}
-                className={`btn-arcade flex-1 py-2.5 flex items-center justify-center gap-2 text-[10px] ${shared ? 'btn-lime' : 'btn-cyan'}`}
-              >
-                <Share2 size={11} />
-                {shared ? '✓ SHARED!' : 'SHARE'}
-              </motion.button>
-            </div>
-
-            <p className="font-mono-arcade text-[7px] text-[#2A2A2A] text-center mt-2 tracking-widest">
-              SHARE OPENS FACEBOOK · MESSENGER · VIBER · ETC. ON MOBILE
-            </p>
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.94, y: 5 }}
+              onClick={handleShare}
+              className={`btn-arcade w-full py-2.5 flex items-center justify-center gap-2 text-[10px] ${shared ? 'btn-lime' : 'btn-cyan'}`}
+            >
+              <Share2 size={11} />
+              {shared ? '✓ SHARED!' : 'SHARE'}
+            </motion.button>
           </div>
         )}
 

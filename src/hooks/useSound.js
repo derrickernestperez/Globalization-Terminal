@@ -90,6 +90,17 @@ export default function useSound() {
     [playSequence],
   );
 
+  /* ─── SFX: Hint / clue reveal ─── */
+  const playHintReveal = useCallback(
+    () =>
+      playSequence([
+        { frequency: noteToFreq(84), duration: 0.06, volume: 0.04, type: 'sine', delay: 0 },
+        { frequency: noteToFreq(88), duration: 0.08, volume: 0.045, type: 'sine', delay: 0.05 },
+        { frequency: noteToFreq(91), duration: 0.10, volume: 0.05, type: 'triangle', delay: 0.10 },
+      ]),
+    [playSequence],
+  );
+
   /* ─── SFX: Pin drop on globe ─── */
   const playPinDrop = useCallback(
     () =>
@@ -299,6 +310,7 @@ export default function useSound() {
     playUiClick,
     playMagicClick,
     playCongratsFinish,
+    playHintReveal,
     playPinDrop,
     playSubmit,
     playNavigate,
