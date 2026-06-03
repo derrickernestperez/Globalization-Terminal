@@ -166,6 +166,45 @@ body::before {
   line-height: 1.6;
   color: #E0E0E0;
 }
+/* Globe — hover country labels (not all countries at once; use hover) */
+.globe-country-anchor-label {
+  position: absolute;
+  z-index: 12;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #39ff14;
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(57, 255, 20, 0.55);
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.35);
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.globe-hover-tip {
+  position: absolute;
+  z-index: 13;
+  transform: translate(8px, -120%);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #39ff14;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(57, 255, 20, 0.5);
+  padding: 0.2rem 0.45rem;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+.globe-hover-tip.is-ocean {
+  color: #00ffff;
+  border-color: rgba(0, 255, 255, 0.45);
+}
+
 .stage-feud-question {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: 1.05rem;

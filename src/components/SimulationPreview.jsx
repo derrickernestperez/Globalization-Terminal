@@ -274,6 +274,28 @@ function ringBBoxArea(ring) {
   return (maxLat - minLat) * (maxLng - minLng);
 }
 
+function centroidFromRings(rings) {
+  if (!rings?.length) return null;
+  let bestRing = rings[0];
+  let bestArea = ringBBoxArea(bestRing);
+  for (let i = 1; i < rings.length; i++) {
+    const area = ringBBoxArea(rings[i]);
+    if (area > bestArea) {
+      bestArea = area;
+      bestRing = rings[i];
+    }
+  }
+  let sumLat = 0;
+  let sumLng = 0;
+  let n = 0;
+  for (const [lng, lat] of bestRing) {
+    sumLat += lat;
+    sumLng += lng;
+    n += 1;
+  }
+  return n ? { lat: sumLat / n, lng: sumLng / n } : null;
+}
+
 function countryFromPolygons(lat, lng, countryEntries) {
   if (!countryEntries?.length) return null;
   const hits = countryEntries.filter((e) => pointInRings(lng, lat, e.rings));
@@ -385,7 +407,8 @@ function decodeCountryEntries(topo) {
     const rawName = geo.properties?.name;
     const name = gameCountryName(rawName);
     if (!name) continue;
-    entries.push({ name, rings: ringsFromGeometry(geo, decodeArc) });
+    const rings = ringsFromGeometry(geo, decodeArc);
+    entries.push({ name, rings, centroid: centroidFromRings(rings) });
   }
   return entries;
 }
@@ -414,6 +437,9 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
   const ringsRef = useRef(null); // land rings
   const countriesRef = useRef(null); // { name, rings }[]
   const dragMovedRef = useRef(false);
+  const hoverRafRef = useRef(null);
+  const [hoverInfo, setHoverInfo] = useState(null);
+  const [countryMapReady, setCountryMapReady] = useState(false);
   const resultMode = !!resultLine;
   const framedRef = useRef(false);
 
@@ -428,11 +454,13 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
         if (cancelled) return;
         ringsRef.current = decodeTopojson(landTopo);
         countriesRef.current = decodeCountryEntries(countriesTopo);
+        setCountryMapReady(true);
       })
       .catch(() => {
         if (!cancelled) {
           ringsRef.current = [];
           countriesRef.current = [];
+          setCountryMapReady(false);
         }
       });
     return () => { cancelled = true; };
@@ -464,38 +492,31 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
     const W = canvas.width;
     const H = canvas.height;
     const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, W, H);
+    const countries = countriesRef.current;
 
     /* Wait for data — schedule a redraw once it arrives */
     if (!rings) {
       const id = setTimeout(() => {
-        if (ringsRef.current) {
-          const c2 = canvasRef.current;
-          if (!c2) return;
-          const ctx2 = c2.getContext('2d');
-          ctx2.clearRect(0, 0, c2.width, c2.height);
-          drawRings(ctx2, ringsRef.current, rotY, rotX, zoom, c2.width, c2.height);
-        }
+        const c2 = canvasRef.current;
+        if (!c2 || !ringsRef.current) return;
+        const ctx2 = c2.getContext('2d');
+        paintGlobeCanvas(
+          ctx2,
+          ringsRef.current,
+          countriesRef.current,
+          rotY,
+          rotX,
+          zoom,
+          c2.width,
+          c2.height,
+          resultLine,
+        );
       }, 150);
       return () => clearTimeout(id);
     }
 
-    drawRings(ctx, rings, rotY, rotX, zoom, W, H);
-    if (resultLine) {
-      drawGreatCircleLine(
-        ctx,
-        resultLine.from.lat,
-        resultLine.from.lng,
-        resultLine.to.lat,
-        resultLine.to.lng,
-        rotY,
-        rotX,
-        zoom,
-        W,
-        H,
-      );
-    }
-  }, [rotY, rotX, zoom, resultLine]);
+    paintGlobeCanvas(ctx, rings, countries, rotY, rotX, zoom, W, H, resultLine);
+  }, [rotY, rotX, zoom, resultLine, countryMapReady]);
 
   /* Auto-spin while idle; stops after LOCK IN ANSWER (resultMode) */
   useEffect(() => {
@@ -583,6 +604,68 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
     }
   };
 
+  const clearHover = () => {
+    if (hoverRafRef.current) {
+      cancelAnimationFrame(hoverRafRef.current);
+      hoverRafRef.current = null;
+    }
+    setHoverInfo(null);
+  };
+
+  const probeHover = (clientX, clientY) => {
+    if (hoverRafRef.current) return;
+    hoverRafRef.current = requestAnimationFrame(() => {
+      hoverRafRef.current = null;
+      const container = containerRef.current;
+      const canvas = canvasRef.current;
+      if (!container || !canvas || dragging) return;
+      const rect = container.getBoundingClientRect();
+      const W = canvas.width;
+      const H = canvas.height;
+      if (!W || !H) return;
+      const scaleX = W / rect.width;
+      const scaleY = H / rect.height;
+      const px = (clientX - rect.left) * scaleX;
+      const py = (clientY - rect.top) * scaleY;
+      const geo = screenToLatLng(px, py, W, H, rotY, rotX, zoom);
+      if (!geo) {
+        setHoverInfo(null);
+        return;
+      }
+      const loc = resolvePinLocation(geo.lat, geo.lng, ringsRef.current, countriesRef.current);
+      const R = globeRadiusPct(W, zoom);
+      const entries = countriesRef.current ?? [];
+      const countryName = countryFromPolygons(geo.lat, geo.lng, entries);
+      const entry = countryName
+        ? entries.find((e) => e.name === countryName)
+        : null;
+      const anchor = entry?.centroid ?? { lat: geo.lat, lng: geo.lng };
+      const proj = orthoProject(anchor.lng, anchor.lat, rotY, rotX, R, 50, 50);
+      if (!proj.visible) {
+        setHoverInfo(null);
+        return;
+      }
+      setHoverInfo({
+        label: loc.label,
+        onLand: loc.onLand,
+        anchorX: proj.x,
+        anchorY: proj.y,
+        tipX: ((clientX - rect.left) / rect.width) * 100,
+        tipY: ((clientY - rect.top) / rect.height) * 100,
+      });
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (dragging) moveDrag(e.clientX, e.clientY);
+    else probeHover(e.clientX, e.clientY);
+  };
+
+  const handleMouseLeave = () => {
+    stopDrag();
+    clearHover();
+  };
+
   /* Project lat/lng → % position on the globe div (for pin markers) */
   const project = (lat, lng) => {
     const W = canvasRef.current?.width ?? containerRef.current?.offsetWidth ?? 390;
@@ -629,10 +712,10 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
           boxShadow:
             '0 0 40px rgba(255,0,128,0.25), 0 0 80px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.6)',
         }}
-        onMouseDown={(e) => startDrag(e.clientX, e.clientY)}
-        onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
+        onMouseDown={(e) => { clearHover(); startDrag(e.clientX, e.clientY); }}
+        onMouseMove={handleMouseMove}
         onMouseUp={handlePointerUp}
-        onMouseLeave={stopDrag}
+        onMouseLeave={handleMouseLeave}
         onTouchStart={(e) => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
         onTouchMove={(e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }}
         onTouchEnd={handleTouchEnd}
@@ -677,6 +760,19 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
               'radial-gradient(circle at 50% 50%, transparent 58%, rgba(255,0,128,0.22) 83%, rgba(255,0,128,0.1) 100%)',
           }}
         />
+
+        {/* Ocean hover tip (country names are drawn on the map) */}
+        {hoverInfo && !dragging && hoverInfo.onLand === false && (
+          <div
+            className="globe-hover-tip is-ocean pointer-events-none"
+            style={{
+              left: `${hoverInfo.tipX}%`,
+              top: `${hoverInfo.tipY}%`,
+            }}
+          >
+            {hoverInfo.label}
+          </div>
+        )}
 
         {/* User guess pin */}
         {pinned && (() => {
@@ -735,7 +831,9 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
         {/* Hint */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className="font-mono-arcade text-[7px] text-[#333] tracking-widest whitespace-nowrap">
-            {resultMode ? 'DRAG · EXPLORE  ·  SCROLL · ZOOM' : 'DRAG · ROTATE  ·  CLICK LAND TO PIN'}
+            {resultMode
+              ? 'DRAG · EXPLORE  ·  SCROLL · ZOOM'
+              : 'DRAG · ROTATE  ·  ZOOM FOR MORE NAMES  ·  CLICK LAND TO PIN'}
           </span>
         </div>
       </div>
@@ -788,6 +886,148 @@ function orthoProject(lng, lat, rotY, rotX, R, cx, cy) {
     y: cy - y3 * R,
     visible: z3 > 0,
   };
+}
+
+const MAP_LABEL_SHORT = {
+  'United States of America': 'U.S.A.',
+  'United Kingdom': 'U.K.',
+  'Democratic Republic of the Congo': 'DR Congo',
+  'Central African Republic': 'CAR',
+  'Dominican Republic': 'Dominican Rep.',
+  'United Arab Emirates': 'UAE',
+  'Bosnia and Herzegovina': 'Bosnia',
+  'Equatorial Guinea': 'Eq. Guinea',
+  'Papua New Guinea': 'Papua NG',
+  'Solomon Islands': 'Solomons',
+  'Antigua and Barbuda': 'Antigua',
+  'Saint Vincent and the Grenadines': 'St Vincent',
+  'Federated States of Micronesia': 'Micronesia',
+};
+
+const QUIZ_COUNTRY_NAMES = new Set(COUNTRY_HINTS.map((c) => c.n));
+
+function abbreviateMapLabel(name) {
+  if (MAP_LABEL_SHORT[name]) return MAP_LABEL_SHORT[name];
+  if (name.length <= 12) return name;
+  return `${name.slice(0, 11)}…`;
+}
+
+function clipGlobeSphere(ctx, W, H) {
+  const cx = W / 2;
+  const cy = H / 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, W / 2 - 1, 0, Math.PI * 2);
+  ctx.clip();
+}
+
+/** Country outlines on top of land fill */
+function drawCountryBorders(ctx, entries, rotY, rotX, zoom, W, H) {
+  if (!entries?.length) return;
+  const R = (W / 2 - 2) * zoom;
+  const cx = W / 2;
+  const cy = H / 2;
+  ctx.save();
+  clipGlobeSphere(ctx, W, H);
+  ctx.lineWidth = 0.45;
+  ctx.strokeStyle = 'rgba(0, 210, 185, 0.38)';
+  ctx.shadowBlur = 0;
+
+  for (const entry of entries) {
+    for (const ring of entry.rings) {
+      const pts = ring.map(([lng, lat]) => orthoProject(lng, lat, rotY, rotX, R, cx, cy));
+      ctx.beginPath();
+      let penDown = false;
+      for (const { x, y, visible } of pts) {
+        if (!visible) { penDown = false; continue; }
+        if (!penDown) { ctx.moveTo(x, y); penDown = true; }
+        else ctx.lineTo(x, y);
+      }
+      if (penDown) ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+/** Country names on the map (front hemisphere; skips overlaps) */
+function drawCountryLabels(ctx, entries, rotY, rotX, zoom, W, H) {
+  if (!entries?.length) return;
+  const R = (W / 2 - 2) * zoom;
+  const cx = W / 2;
+  const cy = H / 2;
+  const minGap = Math.max(22, 34 - zoom * 6);
+  const maxLabels = Math.min(55, Math.round(28 + zoom * 14));
+
+  const candidates = [];
+  for (const entry of entries) {
+    if (!entry.centroid) continue;
+    const { lat, lng } = entry.centroid;
+    const proj = orthoProject(lng, lat, rotY, rotX, R, cx, cy);
+    if (!proj.visible) continue;
+    const area = Math.min(...entry.rings.map(ringBBoxArea));
+    const quizBoost = QUIZ_COUNTRY_NAMES.has(entry.name) ? 1e6 : 0;
+    candidates.push({
+      name: entry.name,
+      x: proj.x,
+      y: proj.y,
+      priority: area + quizBoost,
+    });
+  }
+  candidates.sort((a, b) => b.priority - a.priority);
+
+  ctx.save();
+  clipGlobeSphere(ctx, W, H);
+  const fontPx = Math.max(7, Math.min(10, 7 + zoom * 1.2));
+  ctx.font = `${fontPx}px "Share Tech Mono", "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const placed = [];
+  for (const c of candidates) {
+    if (placed.length >= maxLabels) break;
+    const label = abbreviateMapLabel(c.name);
+    const w = ctx.measureText(label).width;
+    if (Math.hypot(c.x - cx, c.y - cy) + w / 2 > R - 6) continue;
+
+    const crowded = placed.some((p) => {
+      const dx = p.x - c.x;
+      const dy = p.y - c.y;
+      return dx * dx + dy * dy < minGap * minGap;
+    });
+    if (crowded) continue;
+
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.88)';
+    ctx.strokeText(label, c.x, c.y);
+    ctx.fillStyle = QUIZ_COUNTRY_NAMES.has(c.name)
+      ? 'rgba(160, 255, 230, 0.98)'
+      : 'rgba(100, 220, 200, 0.82)';
+    ctx.fillText(label, c.x, c.y);
+    placed.push({ x: c.x, y: c.y });
+  }
+  ctx.restore();
+}
+
+function paintGlobeCanvas(ctx, landRings, countryEntries, rotY, rotX, zoom, W, H, resultLine) {
+  ctx.clearRect(0, 0, W, H);
+  if (landRings) drawRings(ctx, landRings, rotY, rotX, zoom, W, H);
+  if (countryEntries?.length) {
+    drawCountryBorders(ctx, countryEntries, rotY, rotX, zoom, W, H);
+    drawCountryLabels(ctx, countryEntries, rotY, rotX, zoom, W, H);
+  }
+  if (resultLine) {
+    drawGreatCircleLine(
+      ctx,
+      resultLine.from.lat,
+      resultLine.from.lng,
+      resultLine.to.lat,
+      resultLine.to.lng,
+      rotY,
+      rotX,
+      zoom,
+      W,
+      H,
+    );
+  }
 }
 
 /* Draw decoded topojson rings onto a canvas using orthographic projection */
