@@ -359,7 +359,7 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
   /* Auto-spin while idle; stops after LOCK IN ANSWER (resultMode) */
   useEffect(() => {
     if (dragging || resultMode) return undefined;
-    const spin = setInterval(() => setRotY((r) => r + 0.15), 40);
+    const spin = setInterval(() => setRotY((r) => r - 0.15), 40);
     return () => clearInterval(spin);
   }, [dragging, resultMode]);
 
@@ -400,8 +400,8 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
     if (!dragging || !dragRef.current) return;
     const dx = (cx - dragRef.current.cx) * 0.32;
     const dy = (cy - dragRef.current.cy) * 0.32;
-    inertiaRef.current = { x: dx, y: dy };
-    setRotY((r) => r + dx);
+    inertiaRef.current = { x: -dx, y: dy };
+    setRotY((r) => r - dx);
     setRotX((r) => Math.max(-65, Math.min(65, r + dy)));
     dragRef.current = { cx, cy };
   };
