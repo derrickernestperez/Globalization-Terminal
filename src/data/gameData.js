@@ -11,8 +11,8 @@ export const geoFlowPrompts = [
     resourceId: 'introduction-to-globalization',
     hints: [
       { text: 'Think Southeast Asia — a nation made of thousands of islands.', penalty: 10 },
-      { text: 'People here speak Filipino and English; capital is Manila.', penalty: 15 },
-      { text: 'Pin the Philippines in the western Pacific, near Indonesia.', penalty: 20 },
+      { text: 'People here speak Filipino and English; a former Spanish and US colony.', penalty: 15 },
+      { text: 'Southeast Asia — thousands of islands east of Vietnam, west of the Pacific.', penalty: 20 },
     ],
     trivia:
       'Globalization started long before the internet. The first trip around the world showed that distant places could be linked by trade, exploration, and empire.',
@@ -32,7 +32,7 @@ export const geoFlowPrompts = [
     hints: [
       { text: 'A peninsula nation between China and Japan.', penalty: 10 },
       { text: 'Famous for Samsung, BTS, and spicy kimchi.', penalty: 15 },
-      { text: 'Pin South Korea — look for the small country east of China.', penalty: 20 },
+      { text: 'On the Korean peninsula — the southern half, east of China, west of Japan.', penalty: 20 },
     ],
     trivia:
       'Culture now travels at light speed. A song or show can go global in hours thanks to streaming and social media.',
@@ -51,8 +51,8 @@ export const geoFlowPrompts = [
     resourceId: 'global-economy',
     hints: [
       { text: 'A crowded South Asian country next to India.', penalty: 10 },
-      { text: 'Capital Dhaka; known for rivers, rice, and garment exports.', penalty: 15 },
-      { text: 'Pin Bangladesh — east of India, south of the Himalayas.', penalty: 20 },
+      { text: 'Known for rivers, rice farming, and huge clothing factories for global brands.', penalty: 15 },
+      { text: 'South Asia on the Bay of Bengal — very crowded, major clothing-export hub.', penalty: 20 },
     ],
     trivia:
       'Global supply chains hunt for lower costs. Clothes may be sewn here while brand profits stay in wealthy markets.',
@@ -72,7 +72,7 @@ export const geoFlowPrompts = [
     hints: [
       { text: 'Flat, windy, famous for tulips and bicycles.', penalty: 10 },
       { text: 'Tiny kingdom beside Belgium and Germany.', penalty: 15 },
-      { text: 'Pin the Netherlands in northwest Europe on the North Sea.', penalty: 20 },
+      { text: 'Northwest Europe on the North Sea — flat, windy, famous for huge container ports.', penalty: 20 },
     ],
     trivia:
       'Trade needs ports, ships, and shared rules. Rotterdam shows how integrated markets move goods at massive scale.',
@@ -92,7 +92,7 @@ export const geoFlowPrompts = [
     hints: [
       { text: 'A huge country between Canada and Mexico.', penalty: 10 },
       { text: 'Dollar bills, Hollywood, and the Statue of Liberty.', penalty: 15 },
-      { text: 'Pin the United States in North America.', penalty: 20 },
+      { text: 'North America — the very large country between Canada and Mexico.', penalty: 20 },
     ],
     trivia:
       'Money and news move faster than people. A crash on Wall Street can ripple to Manila or Mumbai overnight.',
@@ -112,7 +112,7 @@ export const geoFlowPrompts = [
     hints: [
       { text: 'Landlocked in the Alps — famous for chocolate and watches.', penalty: 10 },
       { text: 'Neutral for centuries; home to the Red Cross.', penalty: 15 },
-      { text: 'Pin Switzerland between France, Germany, and Italy.', penalty: 20 },
+      { text: 'Landlocked in the Alps — famous for neutrality, banks, and international meetings.', penalty: 20 },
     ],
     trivia:
       'There is no world government, but institutions in places like Geneva help countries cooperate on health, trade, and peace.',
@@ -524,27 +524,28 @@ export const feudQuestionPool = [
   },
   {
     id: 'global-apps',
-    question: 'What app or website do people everywhere seem to use?',
+    question: 'Name an app or site almost everyone scrolls on.',
+    insight: 'The same platforms connect people across borders — that is everyday globalization.',
     answers: [
       {
-        label: 'Facebook / Meta',
+        label: 'Facebook / Messenger',
         points: 35,
-        match: ['facebook', 'fb', 'meta', 'instagram', 'ig', 'messenger', 'whatsapp'],
-      },
-      {
-        label: 'YouTube',
-        points: 30,
-        match: ['youtube', 'yt', 'you tube', 'vlog', 'vlogger'],
+        match: ['facebook', 'fb', 'face', 'meta', 'messenger', 'messanger', 'friendster', 'social', 'socmed'],
       },
       {
         label: 'TikTok',
-        points: 25,
-        match: ['tiktok', 'tik tok', 'reels', 'short video', 'shorts'],
+        points: 30,
+        match: ['tiktok', 'tik tok', 'tik-tok', 'tt', 'fyp', 'reels', 'short video', 'shorts', 'viral', 'dance trend'],
       },
       {
-        label: 'Google',
+        label: 'YouTube',
+        points: 25,
+        match: ['youtube', 'yt', 'you tube', 'vlog', 'vlogger', 'video', 'watch'],
+      },
+      {
+        label: 'Instagram',
         points: 10,
-        match: ['google', 'gmail', 'chrome', 'search', 'google maps', 'maps'],
+        match: ['instagram', 'ig', 'insta', 'gram', 'story', 'stories'],
       },
     ],
   },
@@ -654,27 +655,28 @@ export const feudQuestionPool = [
   },
   {
     id: 'culture-spreads',
-    question: 'How does culture from one country reach another?',
+    question: 'How does a trend from abroad show up on your phone?',
+    insight: 'Culture crosses borders through apps and shares — not only through textbooks.',
     answers: [
       {
-        label: 'Movies and TV',
-        points: 35,
-        match: ['movie', 'movies', 'film', 'films', 'tv', 'television', 'show', 'shows', 'series', 'drama', 'kdrama', 'k-drama', 'netflix', 'streaming', 'anime', 'cartoon'],
+        label: 'TikTok / Reels',
+        points: 40,
+        match: ['tiktok', 'tik tok', 'reels', 'reel', 'viral', 'trend', 'trending', 'fyp', 'challenge', 'dance', 'short video', 'scroll'],
+      },
+      {
+        label: 'Facebook / IG',
+        points: 30,
+        match: ['facebook', 'fb', 'instagram', 'ig', 'insta', 'social media', 'socmed', 'share', 'repost', 'feed', 'story'],
+      },
+      {
+        label: 'YouTube / Netflix',
+        points: 20,
+        match: ['youtube', 'yt', 'netflix', 'streaming', 'show', 'series', 'kdrama', 'k-drama', 'anime', 'movie', 'watch'],
       },
       {
         label: 'Music',
-        points: 30,
-        match: ['music', 'song', 'songs', 'kpop', 'k-pop', 'pop', 'concert', 'spotify', 'artist', 'band', 'rapper', 'hip hop'],
-      },
-      {
-        label: 'Social media',
-        points: 25,
-        match: ['social media', 'internet', 'online', 'viral', 'trend', 'trending', 'influencer', 'meme', 'memes', 'tiktok', 'instagram', 'facebook', 'youtube'],
-      },
-      {
-        label: 'Food',
         points: 10,
-        match: ['food', 'restaurant', 'cuisine', 'recipe', 'pizza', 'sushi', 'ramen', 'taco', 'burger', 'korean food', 'japanese food', 'chinese food'],
+        match: ['music', 'song', 'kpop', 'k-pop', 'spotify', 'concert', 'dance', 'cover'],
       },
     ],
   },
@@ -706,27 +708,28 @@ export const feudQuestionPool = [
   },
   {
     id: 'made-in-label',
-    question: 'Where do people look to see where a product was made?',
+    question: 'How do you know something you bought was made abroad?',
+    insight: 'Everyday shopping teaches globalization — check the tag or the app listing.',
     answers: [
       {
-        label: 'Made in label',
+        label: 'Made in China / Vietnam tag',
         points: 40,
-        match: ['made in', 'label', 'tag', 'sticker', 'made in china', 'made in vietnam', 'made in philippines', 'country of origin', 'origin label'],
+        match: ['made in', 'made in china', 'china', 'vietnam', 'imported', 'import', 'tag', 'label', 'sticker', 'origin', 'abroad', 'overseas'],
       },
       {
-        label: 'Shipping box',
-        points: 25,
-        match: ['box', 'packaging', 'package', 'parcel', 'shipment', 'delivery box', 'amazon box'],
+        label: 'Shopee / Lazada order from abroad',
+        points: 30,
+        match: ['shopee', 'lazada', 'online', 'order online', 'overseas seller', 'international shipping', 'shein', 'amazon'],
       },
       {
-        label: 'Online product page',
+        label: 'Mall brand from another country',
         points: 20,
-        match: ['website', 'online', 'shopee', 'lazada', 'amazon', 'product page', 'description', 'seller info'],
+        match: ['brand', 'foreign brand', 'mcdo', 'mcdonalds', 'nike', 'uniqlo', 'h&m', 'international brand'],
       },
       {
-        label: 'Barcode / receipt',
-        points: 15,
-        match: ['barcode', 'receipt', 'invoice', 'import', 'imported', 'customs'],
+        label: 'Cheaper price / familiar logo',
+        points: 10,
+        match: ['cheap', 'cheaper', 'logo', 'famous brand', 'global brand'],
       },
     ],
   },
@@ -758,9 +761,9 @@ export const feudQuestionPool = [
   },
   {
     id: 'morning-routine-global',
-    question: 'What do you check first thing in the morning that connects you to the world?',
+    question: 'What do you open first in the morning that links you to the world?',
     answers: [
-      { label: 'Phone notifications', points: 40, match: ['phone', 'notifications', 'notification', 'messages', 'texts', 'alarm', 'social media', 'facebook', 'instagram', 'tiktok'] },
+      { label: 'Phone / social apps', points: 40, match: ['phone', 'notifications', 'facebook', 'fb', 'messenger', 'instagram', 'ig', 'tiktok', 'tik tok', 'social media', 'socmed', 'scroll', 'feed'] },
       { label: 'News or weather', points: 30, match: ['news', 'weather', 'headlines', 'newspaper', 'tv news', 'forecast', 'update', 'updates'] },
       { label: 'Email or school/work chat', points: 20, match: ['email', 'gmail', 'outlook', 'teams', 'slack', 'zoom', 'work chat', 'school chat', 'messenger'] },
       { label: 'Breakfast from another country', points: 10, match: ['coffee', 'cereal', 'breakfast', 'nestle', 'nescafe', 'imported', 'foreign food'] },
@@ -768,12 +771,13 @@ export const feudQuestionPool = [
   },
   {
     id: 'favorite-import',
-    question: 'Name something in your room that probably came from another country.',
+    question: 'Name something you own that was probably made in another country.',
+    insight: 'Phones, clothes, and toys often cross borders before they reach your room.',
     answers: [
-      { label: 'Electronics', points: 40, match: ['phone', 'laptop', 'charger', 'headphones', 'earbuds', 'tablet', 'monitor', 'keyboard', 'mouse', 'electronics', 'gadget'] },
-      { label: 'Clothes or shoes', points: 30, match: ['clothes', 'shirt', 'shoes', 'sneakers', 'jacket', 'hoodie', 'dress', 'pants', 'uniform'] },
-      { label: 'Toy or poster', points: 20, match: ['toy', 'figure', 'poster', 'anime', 'merch', 'collectible', 'plush', 'stuffed toy'] },
-      { label: 'Furniture or decor', points: 10, match: ['furniture', 'desk', 'chair', 'lamp', 'decor', 'ikea', 'shelf', 'bed'] },
+      { label: 'Phone or charger', points: 40, match: ['phone', 'cellphone', 'mobile', 'iphone', 'android', 'samsung', 'charger', 'earphones', 'earbuds', 'gadget'] },
+      { label: 'Shoes or clothes', points: 30, match: ['shoes', 'sneakers', 'clothes', 'shirt', 'nike', 'adidas', 'hoodie', 'dress', 'pants', 'uniform'] },
+      { label: 'Laptop or tablet', points: 20, match: ['laptop', 'computer', 'tablet', 'ipad', 'keyboard', 'mouse', 'monitor'] },
+      { label: 'Toy or game', points: 10, match: ['toy', 'lego', 'figure', 'game', 'console', 'playstation', 'nintendo', 'anime'] },
     ],
   },
   {
@@ -908,12 +912,13 @@ export const feudQuestionPool = [
   },
   {
     id: 'trending-dance',
-    question: 'How does a dance challenge spread around the world so fast?',
+    question: 'How does a dance or meme go viral worldwide overnight?',
+    insight: 'Short-video apps let trends jump countries faster than TV ever could.',
     answers: [
-      { label: 'TikTok and Reels', points: 45, match: ['tiktok', 'reels', 'instagram reels', 'short video', 'viral dance', 'challenge', 'trend'] },
-      { label: 'Copy and repost', points: 25, match: ['copy', 'repost', 'share', 'viral', 'meme', 'duet', 'stitch'] },
-      { label: 'Influencers', points: 20, match: ['influencer', 'influencers', 'creator', 'creators', 'vlogger', 'celebrity'] },
-      { label: 'Hashtags', points: 10, match: ['hashtag', 'hashtags', 'tag', 'fyp', 'for you page'] },
+      { label: 'TikTok', points: 45, match: ['tiktok', 'tik tok', 'tt', 'fyp', 'for you', 'viral', 'trend', 'challenge', 'dance'] },
+      { label: 'Facebook / Reels', points: 30, match: ['facebook', 'fb', 'reels', 'reel', 'instagram', 'ig', 'share', 'repost', 'socmed'] },
+      { label: 'YouTube Shorts', points: 15, match: ['youtube', 'yt', 'shorts', 'short video', 'vlog'] },
+      { label: 'Friends repost it', points: 10, match: ['share', 'repost', 'copy', 'send', 'group chat', 'messenger', 'forward'] },
     ],
   },
   {
@@ -927,23 +932,25 @@ export const feudQuestionPool = [
     ],
   },
   {
-    id: 'imported-medicine',
-    question: 'Why do hospitals import medicine from other countries?',
+    id: 'ph-imported-snacks',
+    question: 'Name something Filipinos buy that often comes from abroad.',
+    insight: 'Global trade shows up in groceries — brands and factories are not always local.',
     answers: [
-      { label: 'Not enough local factories', points: 35, match: ['import', 'imported', 'factory', 'manufacturing', 'local production', 'not made here'] },
-      { label: 'Better or newer drugs abroad', points: 30, match: ['better medicine', 'new drug', 'modern medicine', 'research', 'pharma', 'pharmaceutical'] },
-      { label: 'Cheaper bulk orders', points: 20, match: ['cheaper', 'bulk', 'wholesale', 'cost', 'price', 'affordable'] },
-      { label: 'Global health companies', points: 15, match: ['pfizer', 'global company', 'multinational', 'big pharma', 'international brand'] },
+      { label: 'Instant noodles / cup noodles', points: 40, match: ['noodles', 'instant noodles', 'lucky me', 'cup noodles', 'ramen', 'pancit canton', 'mami'] },
+      { label: 'Fast food chicken / burger', points: 30, match: ['jollibee', 'mcdo', 'mcdonalds', 'kfc', 'burger', 'fried chicken', 'chickenjoy', 'fast food'] },
+      { label: 'Chocolate / candy', points: 20, match: ['chocolate', 'candy', 'snickers', 'kitkat', 'oreo', 'biscuit', 'cookies', 'snack'] },
+      { label: 'Coffee / 3-in-1', points: 10, match: ['coffee', 'nescafe', '3 in 1', 'starbucks', 'kopiko', 'drink'] },
     ],
   },
   {
     id: 'world-record-food',
-    question: 'Name a food you can buy in the Philippines that came from abroad originally.',
+    question: 'Name a popular PH food style that spread from another country.',
+    insight: 'Colonization and trade brought new foods — we made them our own (like sweet spaghetti).',
     answers: [
-      { label: 'Spaghetti with sweet sauce', points: 30, match: ['spaghetti', 'pasta', 'jollibee spaghetti', 'sweet spaghetti'] },
-      { label: 'Fried chicken fast food', points: 30, match: ['fried chicken', 'kfc', 'jollibee chicken', 'chickenjoy', 'fast food chicken'] },
-      { label: 'Instant noodles', points: 25, match: ['instant noodles', 'lucky me', 'noodles', 'ramen cup', 'cup noodles'] },
-      { label: 'Bread or pan de sal style wheat', points: 15, match: ['bread', 'pan de sal', 'wheat', 'bakery', 'sandwich', 'toast'] },
+      { label: 'Spaghetti (sweet style)', points: 35, match: ['spaghetti', 'pasta', 'jollibee spaghetti', 'sweet spaghetti', 'italian'] },
+      { label: 'Fried chicken / fast food', points: 35, match: ['fried chicken', 'chicken', 'kfc', 'jollibee', 'chickenjoy', 'fast food'] },
+      { label: 'Bread / pan de sal', points: 20, match: ['bread', 'pan de sal', 'pandesal', 'bakery', 'sandwich', 'toast', 'wheat'] },
+      { label: 'Hamburger', points: 10, match: ['burger', 'hamburger', 'mcdo', 'beef patty'] },
     ],
   },
   {
@@ -998,9 +1005,9 @@ export const feudQuestionPool = [
   },
   {
     id: 'viral-product',
-    question: 'How does a random product suddenly sell out everywhere?',
+    question: 'Why does a random product sell out after people post it online?',
     answers: [
-      { label: 'Viral TikTok review', points: 40, match: ['tiktok', 'viral', 'review', 'influencer', 'trend', 'hype', 'sold out', 'viral video'] },
+      { label: 'TikTok / FB viral post', points: 40, match: ['tiktok', 'tik tok', 'fb', 'facebook', 'viral', 'review', 'influencer', 'trend', 'reels', 'hype', 'sold out'] },
       { label: 'Celebrity used it', points: 25, match: ['celebrity', 'famous', 'endorsement', 'endorser', 'star', 'influencer post'] },
       { label: 'Limited drop or hype brand', points: 20, match: ['limited edition', 'drop', 'hype', 'scarcity', 'exclusive', 'restock'] },
       { label: 'Free shipping online', points: 15, match: ['free shipping', 'online sale', 'shopee', 'lazada', 'discount', 'flash sale', '11.11'] },

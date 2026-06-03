@@ -82,6 +82,12 @@ function normalizeFeudInput(raw) {
   return raw.trim().toLowerCase().replace(/[^\w\s'-]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+const FEUD_SHORT_KEYS = new Set(['fb', 'ig', 'yt', 'un', 'dm', 'ph', 'us', 'uk', 'eu', 'x']);
+
+function feudKeyMinLen(key) {
+  return FEUD_SHORT_KEYS.has(key) ? 2 : 3;
+}
+
 function feudMatchScore(input, answer) {
   if (!input) return 0;
   const label = answer.label.toLowerCase();
@@ -89,16 +95,21 @@ function feudMatchScore(input, answer) {
   if (label.includes(input) && input.length >= 3) return 500 + input.length;
   if (input.includes(label) && label.length >= 4) return 450 + label.length;
 
+  const candidates = [input, ...input.split(/\s+/).filter((w) => w.length >= 2)];
   let best = 0;
-  for (const m of answer.match) {
-    const key = m.toLowerCase().trim();
-    if (!key) continue;
-    if (input === key) {
-      best = Math.max(best, 300 + key.length);
-    } else if (key.length >= 3 && input.includes(key)) {
-      best = Math.max(best, 100 + key.length);
-    } else if (input.length >= 4 && key.includes(input)) {
-      best = Math.max(best, 50 + input.length);
+  for (const cand of candidates) {
+    for (const m of answer.match) {
+      const key = m.toLowerCase().trim();
+      if (!key) continue;
+      const minKey = feudKeyMinLen(key);
+      const minCand = FEUD_SHORT_KEYS.has(cand) ? 2 : 4;
+      if (cand === key) {
+        best = Math.max(best, 300 + key.length);
+      } else if (key.length >= minKey && cand.includes(key)) {
+        best = Math.max(best, 100 + key.length);
+      } else if (cand.length >= minCand && key.includes(cand)) {
+        best = Math.max(best, 50 + cand.length);
+      }
     }
   }
   return best;
