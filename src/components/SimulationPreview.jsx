@@ -38,6 +38,33 @@ function formatFeudClock(seconds) {
 }
 
 const WORLD_ATLAS_URL = 'https://unpkg.com/world-atlas@2.0.2/land-110m.json';
+const WORLD_COUNTRIES_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+
+/** Map Natural Earth / atlas names → game country labels */
+const COUNTRY_NAME_ALIASES = {
+  'united states of america': 'United States',
+  'russian federation': 'Russia',
+  'south korea': 'South Korea',
+  'korea, rep.': 'South Korea',
+  'republic of korea': 'South Korea',
+  'korea, republic of': 'South Korea',
+  'viet nam': 'Vietnam',
+  'united kingdom': 'United Kingdom',
+  'great britain': 'United Kingdom',
+  'czechia': 'Czech Republic',
+  'iran (islamic republic of)': 'Iran',
+  'iran, islamic rep.': 'Iran',
+  'syrian arab republic': 'Syria',
+  'tanzania, united republic of': 'Tanzania',
+  'venezuela (bolivarian republic of)': 'Venezuela',
+  'bolivia (plurinational state of)': 'Bolivia',
+  'brunei darussalam': 'Brunei',
+  'cabo verde': 'Cape Verde',
+  'côte d\'ivoire': 'Ivory Coast',
+  "cote d'ivoire": 'Ivory Coast',
+  'myanmar': 'Myanmar',
+  'burma': 'Myanmar',
+};
 
 /* ─────────────── Helpers ─────────────── */
 function haversine(lat1, lng1, lat2, lng2) {
@@ -192,14 +219,88 @@ function findFeudMatchIndex(input, answers, revealedSet) {
   return bestScore > 0 ? bestIdx : -1;
 }
 
-function nearestCountry(lat, lng) {
-  let best = COUNTRY_HINTS[0];
+function gameCountryName(atlasName) {
+  if (!atlasName) return null;
+  const key = atlasName.trim().toLowerCase();
+  if (COUNTRY_NAME_ALIASES[key]) return COUNTRY_NAME_ALIASES[key];
+  const exact = COUNTRY_HINTS.find((c) => c.n.trim().toLowerCase() === key);
+  if (exact) return exact.n;
+  return atlasName.trim();
+}
+
+function nearestCountry(lat, lng, { maxKm = 650 } = {}) {
+  let best = null;
   let minD = Infinity;
   for (const c of COUNTRY_HINTS) {
     const d = haversine(lat, lng, c.lat, c.lng);
     if (d < minD) { minD = d; best = c; }
   }
+  if (!best || minD > maxKm) return null;
   return best.n;
+}
+
+function pointInRing(lng, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function pointInRings(lng, lat, rings) {
+  return rings.some((ring) => ring.length >= 3 && pointInRing(lng, lat, ring));
+}
+
+function isOnLand(lat, lng, landRings) {
+  if (!landRings?.length) return null;
+  return landRings.some((ring) => ring.length >= 3 && pointInRing(lng, lat, ring));
+}
+
+function ringBBoxArea(ring) {
+  let minLat = 90;
+  let maxLat = -90;
+  let minLng = 180;
+  let maxLng = -180;
+  for (const [lng, lat] of ring) {
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+    minLng = Math.min(minLng, lng);
+    maxLng = Math.max(maxLng, lng);
+  }
+  return (maxLat - minLat) * (maxLng - minLng);
+}
+
+function countryFromPolygons(lat, lng, countryEntries) {
+  if (!countryEntries?.length) return null;
+  const hits = countryEntries.filter((e) => pointInRings(lng, lat, e.rings));
+  if (!hits.length) return null;
+  if (hits.length === 1) return hits[0].name;
+  hits.sort((a, b) => {
+    const areaA = Math.min(...a.rings.map(ringBBoxArea));
+    const areaB = Math.min(...b.rings.map(ringBBoxArea));
+    return areaA - areaB;
+  });
+  return hits[0].name;
+}
+
+function resolvePinLocation(lat, lng, landRings, countryEntries) {
+  const onLand = isOnLand(lat, lng, landRings);
+  if (onLand === false) {
+    return { lat, lng, label: 'Open ocean', onLand: false };
+  }
+  const fromPoly = countryFromPolygons(lat, lng, countryEntries);
+  if (fromPoly) return { lat, lng, label: fromPoly, onLand: true };
+  const fallback = nearestCountry(lat, lng, { maxKm: 400 });
+  return {
+    lat,
+    lng,
+    label: fallback ?? 'Unknown land',
+    onLand: true,
+  };
 }
 
 function countryCentroid(countryName) {
@@ -238,30 +339,55 @@ function greatCirclePath(lat1, lng1, lat2, lng2, segments = 56) {
   return out;
 }
 
-/* Decode world-atlas topojson → array of [lng,lat][] polygon rings */
-function decodeTopojson(topo) {
+function decodeTopoArcs(topo) {
   const sc = topo.transform?.scale ?? [1, 1];
   const tr = topo.transform?.translate ?? [0, 0];
-  const rings = [];
-  const decodeArc = (idx) => {
+  return (idx) => {
     const rev = idx < 0;
     const arc = topo.arcs[rev ? ~idx : idx];
-    let x = 0, y = 0;
+    let x = 0;
+    let y = 0;
     const pts = arc.map(([dx, dy]) => {
-      x += dx; y += dy;
+      x += dx;
+      y += dy;
       return [x * sc[0] + tr[0], y * sc[1] + tr[1]];
     });
     return rev ? pts.reverse() : pts;
   };
-  for (const geo of topo.objects.land.geometries) {
-    const polys = geo.type === 'Polygon' ? [geo.arcs] : geo.arcs;
-    for (const poly of polys) {
-      for (const ringArcs of poly) {
-        rings.push(ringArcs.flatMap(decodeArc));
-      }
+}
+
+function ringsFromGeometry(geo, decodeArc) {
+  const rings = [];
+  const polys = geo.type === 'Polygon' ? [geo.arcs] : geo.arcs;
+  for (const poly of polys) {
+    for (const ringArcs of poly) {
+      rings.push(ringArcs.flatMap(decodeArc));
     }
   }
   return rings;
+}
+
+/* Decode world-atlas land → array of [lng,lat][] polygon rings */
+function decodeTopojson(topo) {
+  const decodeArc = decodeTopoArcs(topo);
+  const rings = [];
+  for (const geo of topo.objects.land.geometries) {
+    rings.push(...ringsFromGeometry(geo, decodeArc));
+  }
+  return rings;
+}
+
+/* Decode countries-110m → { name, rings }[] for hit-testing */
+function decodeCountryEntries(topo) {
+  const decodeArc = decodeTopoArcs(topo);
+  const entries = [];
+  for (const geo of topo.objects.countries.geometries) {
+    const rawName = geo.properties?.name;
+    const name = gameCountryName(rawName);
+    if (!name) continue;
+    entries.push({ name, rings: ringsFromGeometry(geo, decodeArc) });
+  }
+  return entries;
 }
 
 /* ═══════════════════════════════════════
@@ -285,16 +411,31 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
   const frameRef = useRef(null);
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const ringsRef = useRef(null); // decoded topojson rings
+  const ringsRef = useRef(null); // land rings
+  const countriesRef = useRef(null); // { name, rings }[]
+  const dragMovedRef = useRef(false);
   const resultMode = !!resultLine;
   const framedRef = useRef(false);
 
-  /* Fetch world atlas topojson once */
+  /* Fetch land + country polygons for map draw and pin hit-testing */
   useEffect(() => {
-    fetch(WORLD_ATLAS_URL)
-      .then((r) => r.json())
-      .then((topo) => { ringsRef.current = decodeTopojson(topo); })
-      .catch(() => { ringsRef.current = []; });
+    let cancelled = false;
+    Promise.all([
+      fetch(WORLD_ATLAS_URL).then((r) => r.json()),
+      fetch(WORLD_COUNTRIES_URL).then((r) => r.json()),
+    ])
+      .then(([landTopo, countriesTopo]) => {
+        if (cancelled) return;
+        ringsRef.current = decodeTopojson(landTopo);
+        countriesRef.current = decodeCountryEntries(countriesTopo);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          ringsRef.current = [];
+          countriesRef.current = [];
+        }
+      });
+    return () => { cancelled = true; };
   }, []);
 
   /* Sync canvas buffer size to the rendered container size (mobile-safe) */
@@ -393,6 +534,7 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
 
   const startDrag = (cx, cy) => {
     setDragging(true);
+    dragMovedRef.current = false;
     dragRef.current = { cx, cy };
     inertiaRef.current = { x: 0, y: 0 };
   };
@@ -400,6 +542,9 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
     if (!dragging || !dragRef.current) return;
     const dx = (cx - dragRef.current.cx) * 0.32;
     const dy = (cy - dragRef.current.cy) * 0.32;
+    if (Math.abs(cx - dragRef.current.cx) + Math.abs(cy - dragRef.current.cy) > 4) {
+      dragMovedRef.current = true;
+    }
     inertiaRef.current = { x: -dx, y: dy };
     setRotY((r) => r - dx);
     setRotX((r) => Math.max(-65, Math.min(65, r + dy)));
@@ -407,31 +552,35 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
   };
   const stopDrag = () => { setDragging(false); dragRef.current = null; };
 
-  /* Click on sphere → lat/lng via inverse orthographic projection */
-  const handleClick = (e) => {
-    if (resultMode || !e.currentTarget) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const R  = (Math.min(rect.width, rect.height) / 2 - 2) * zoom;
-    const cx = rect.width  / 2;
-    const cy = rect.height / 2;
-    const nx = (e.clientX - rect.left  - cx) / R; /* normalised -1..1 */
-    const ny = (e.clientY - rect.top   - cy) / R;
-    if (nx * nx + ny * ny > 1) return; /* outside sphere */
+  const placePin = (clientX, clientY) => {
+    if (resultMode || dragMovedRef.current) return;
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    if (!container || !canvas) return;
+    const rect = container.getBoundingClientRect();
+    const W = canvas.width;
+    const H = canvas.height;
+    if (!W || !H) return;
+    const scaleX = W / rect.width;
+    const scaleY = H / rect.height;
+    const px = (clientX - rect.left) * scaleX;
+    const py = (clientY - rect.top) * scaleY;
+    const geo = screenToLatLng(px, py, W, H, rotY, rotX, zoom);
+    if (!geo) return;
+    onPin(resolvePinLocation(geo.lat, geo.lng, ringsRef.current, countriesRef.current));
+  };
 
-    /* Sphere surface z (front hemisphere) */
-    const z3 = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
-    /* x3 = nx, y3 = -ny in screen coords */
-    const x3 =  nx;
-    const y3 = -ny;
+  const handlePointerUp = (e) => {
+    stopDrag();
+    if (e.button !== undefined && e.button !== 0) return;
+    placePin(e.clientX, e.clientY);
+  };
 
-    /* Inverse tilt rotation */
-    const tilt   = rotX * Math.PI / 180;
-    const y3pre  = y3 * Math.cos(tilt) - z3 * Math.sin(tilt);
-    const z3pre  = y3 * Math.sin(tilt) + z3 * Math.cos(tilt);
-
-    const lat = Math.asin(Math.max(-1, Math.min(1, y3pre))) * 180 / Math.PI;
-    const lng = ((Math.atan2(x3, z3pre) * 180 / Math.PI + rotY + 540) % 360) - 180;
-    onPin({ lat, lng, label: nearestCountry(lat, lng) });
+  const handleTouchEnd = (e) => {
+    stopDrag();
+    if (e.changedTouches?.[0]) {
+      placePin(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }
   };
 
   /* Project lat/lng → % position on the globe div (for pin markers) */
@@ -480,14 +629,13 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
           boxShadow:
             '0 0 40px rgba(255,0,128,0.25), 0 0 80px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.6)',
         }}
-        onClick={handleClick}
         onMouseDown={(e) => startDrag(e.clientX, e.clientY)}
         onMouseMove={(e) => moveDrag(e.clientX, e.clientY)}
-        onMouseUp={stopDrag}
+        onMouseUp={handlePointerUp}
         onMouseLeave={stopDrag}
         onTouchStart={(e) => startDrag(e.touches[0].clientX, e.touches[0].clientY)}
         onTouchMove={(e) => { e.preventDefault(); moveDrag(e.touches[0].clientX, e.touches[0].clientY); }}
-        onTouchEnd={stopDrag}
+        onTouchEnd={handleTouchEnd}
         onWheel={(e) => setZoom((z) => Math.max(1, Math.min(2.4, z - e.deltaY * 0.001)))}
         onKeyDown={(e) => {
           if (e.key === '+') setZoom((z) => Math.min(2.4, z * 1.2));
@@ -534,7 +682,8 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
         {pinned && (() => {
           const { x, y, visible } = project(pinned.lat, pinned.lng);
           if (!visible) return null;
-          const pinColor = resultMode ? '#FFD700' : '#FF0080';
+          const isOcean = pinned.onLand === false;
+          const pinColor = resultMode ? '#FFD700' : isOcean ? '#00FFFF' : '#FF0080';
           return (
             <div
               className="absolute z-10 pointer-events-none"
@@ -586,7 +735,7 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
         {/* Hint */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 pointer-events-none">
           <span className="font-mono-arcade text-[7px] text-[#333] tracking-widest whitespace-nowrap">
-            {resultMode ? 'DRAG · EXPLORE  ·  SCROLL · ZOOM' : 'DRAG · ROTATE  ·  SCROLL · ZOOM'}
+            {resultMode ? 'DRAG · EXPLORE  ·  SCROLL · ZOOM' : 'DRAG · ROTATE  ·  CLICK LAND TO PIN'}
           </span>
         </div>
       </div>
@@ -598,6 +747,28 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
    Converts (lng, lat) + globe rotation to canvas (x, y).
    Returns { x, y, visible } — visible = false when point is on the back
    hemisphere and should not be drawn. */
+/** Click position (canvas px) → lat/lng on the visible globe sphere */
+function screenToLatLng(px, py, W, H, rotY, rotX, zoom) {
+  const R = (Math.min(W, H) / 2 - 2) * zoom;
+  const cx = W / 2;
+  const cy = H / 2;
+  const nx = (px - cx) / R;
+  const ny = (py - cy) / R;
+  if (nx * nx + ny * ny > 1) return null;
+
+  const z3 = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+  const x3 = nx;
+  const y3 = -ny;
+
+  const tilt = rotX * Math.PI / 180;
+  const y3pre = y3 * Math.cos(tilt) - z3 * Math.sin(tilt);
+  const z3pre = y3 * Math.sin(tilt) + z3 * Math.cos(tilt);
+
+  const lat = Math.asin(Math.max(-1, Math.min(1, y3pre))) * 180 / Math.PI;
+  const lng = ((Math.atan2(x3, z3pre) * 180) / Math.PI + rotY + 540) % 360 - 180;
+  return { lat, lng };
+}
+
 function orthoProject(lng, lat, rotY, rotX, R, cx, cy) {
   const phi   = ((lng - rotY + 540) % 360 - 180) * Math.PI / 180;
   const theta = lat * Math.PI / 180;
@@ -1072,12 +1243,15 @@ export default function SimulationPreview({
     let targetLat = centroid.lat;
     let targetLng = centroid.lng;
     if (pinnedPt) {
+      const targetCountry = p.country?.trim().toLowerCase();
+      const pinLabel = pinnedPt.label?.trim().toLowerCase();
       const countryMatch =
-        p.country &&
-        pinnedPt.label &&
-        (pinnedPt.label.trim().toLowerCase() === p.country.trim().toLowerCase() ||
-          nearestCountry(pinnedPt.lat, pinnedPt.lng).trim().toLowerCase() ===
-            p.country.trim().toLowerCase());
+        pinnedPt.onLand !== false &&
+        targetCountry &&
+        pinLabel &&
+        pinLabel !== 'open ocean' &&
+        pinLabel !== 'unknown land' &&
+        pinLabel === targetCountry;
       if (countryMatch) {
         dist = 0;
         targetLat = pinnedPt.lat;
@@ -1276,8 +1450,12 @@ export default function SimulationPreview({
                 CLUE {geoIndex + 1} / {geoPrompts.length}
               </p>
               {pinnedPt && !geoFeedback && (
-                <span className="font-mono-arcade text-[9px] text-[#FF0080]">
+                <span
+                  className="font-mono-arcade text-[9px]"
+                  style={{ color: pinnedPt.onLand === false ? '#00FFFF' : '#FF0080' }}
+                >
                   PIN: {pinnedPt.label}
+                  {pinnedPt.onLand === false ? ' — place on land' : ''}
                 </span>
               )}
             </div>
@@ -1378,11 +1556,15 @@ export default function SimulationPreview({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.94, y: 5 }}
                 onClick={() => { sfx.submit(); handleGeoSubmit(); }}
-                disabled={!pinnedPt}
-                className={`btn-arcade w-full mt-4 py-3 ${pinnedPt ? 'btn-lime' : 'btn-ghost'}`}
-                style={pinnedPt ? {} : { borderColor: '#1A1A1A', color: '#333' }}
+                disabled={!pinnedPt || pinnedPt.onLand === false}
+                className={`btn-arcade w-full mt-4 py-3 ${pinnedPt && pinnedPt.onLand !== false ? 'btn-lime' : 'btn-ghost'}`}
+                style={pinnedPt && pinnedPt.onLand !== false ? {} : { borderColor: '#1A1A1A', color: '#333' }}
               >
-                {pinnedPt ? 'LOCK IN ANSWER' : 'PLACE YOUR PIN ON THE GLOBE'}
+                {pinnedPt?.onLand === false
+                  ? 'PIN LAND — NOT OCEAN'
+                  : pinnedPt
+                    ? 'LOCK IN ANSWER'
+                    : 'PLACE YOUR PIN ON THE GLOBE'}
               </motion.button>
             ) : (
               <motion.div
