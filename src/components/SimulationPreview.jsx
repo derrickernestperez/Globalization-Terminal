@@ -76,6 +76,20 @@ const COUNTRY_HINTS = [
   { n: 'Thailand', lat: 15.87, lng: 100.99 },
   { n: 'Malaysia', lat: 4.21, lng: 101.98 },
   { n: 'South Africa', lat: -30.56, lng: 22.94 },
+  { n: 'Saudi Arabia', lat: 23.89, lng: 45.08 },
+  { n: 'Pakistan', lat: 30.38, lng: 69.35 },
+  { n: 'Kenya', lat: -0.02, lng: 37.91 },
+  { n: 'Colombia', lat: 4.57, lng: -74.30 },
+  { n: 'Chile', lat: -35.68, lng: -71.54 },
+  { n: 'Greece', lat: 39.07, lng: 21.82 },
+  { n: 'Portugal', lat: 39.40, lng: -8.22 },
+  { n: 'United Arab Emirates', lat: 23.42, lng: 53.85 },
+  { n: 'New Zealand', lat: -40.90, lng: 174.89 },
+  { n: 'Peru', lat: -9.19, lng: -75.02 },
+  { n: 'Iran', lat: 32.43, lng: 53.69 },
+  { n: 'Iraq', lat: 33.22, lng: 43.68 },
+  { n: 'Morocco', lat: 31.79, lng: -7.09 },
+  { n: 'Norway', lat: 60.47, lng: 8.47 },
 ];
 
 function normalizeFeudInput(raw) {
@@ -294,7 +308,14 @@ function GlobeBoard({ onPin, pinned, revealTarget, resultLine }) {
     }
   }, [rotY, rotX, zoom, resultLine]);
 
-  /* Manual spin only — inertia after drag */
+  /* Auto-spin while idle; stops after LOCK IN ANSWER (resultMode) */
+  useEffect(() => {
+    if (dragging || resultMode) return undefined;
+    const spin = setInterval(() => setRotY((r) => r + 0.15), 40);
+    return () => clearInterval(spin);
+  }, [dragging, resultMode]);
+
+  /* Inertia after manual drag (works before and after lock-in) */
   useEffect(() => {
     if (dragging) return undefined;
     const { x, y } = inertiaRef.current;
